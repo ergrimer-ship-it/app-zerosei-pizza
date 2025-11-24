@@ -1,0 +1,138 @@
+.product-list-screen {
+    padding-bottom: var(--spacing-3xl);
+}
+
+.list-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    position: relative;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    font-size: var(--font-size-base);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.back-btn:hover {
+    color: var(--color-primary);
+}
+
+.list-header h1 {
+    flex: 1;
+    text-align: center;
+    margin: 0;
+    font-size: var(--font-size-2xl);
+    color: var(--color-primary);
+    margin-right: 80px;
+    /* Balance the back button width */
+}
+
+.search-bar {
+    position: relative;
+    margin-bottom: var(--spacing-xl);
+}
+
+.search-icon {
+    position: absolute;
+    left: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-light);
+}
+
+.search-bar input {
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) var(--spacing-2xl);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-base);
+    transition: all var(--transition-fast);
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.products-grid {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.product-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.product-info {
+    flex: 1;
+    padding-right: var(--spacing-md);
+}
+
+.product-info h3 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-size-lg);
+    color: var(--color-text);
+}
+
+.ingredients {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    line-height: 1.4;
+}
+
+.price {
+    margin: 0;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    font-size: var(--font-size-lg);
+}
+
+.add-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--color-bg-secondary);
+    border: none;
+    color: var(--color-primary);
+    font-size: var(--font-size-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.add-btn:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+.loading,
+.no-results {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--color-text-secondary);
+}

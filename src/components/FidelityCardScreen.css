@@ -1,0 +1,173 @@
+.fidelity-screen {
+    padding-bottom: var(--spacing-3xl);
+}
+
+.login-prompt {
+    text-align: center;
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    background: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.lock-icon {
+    font-size: 4rem;
+    display: block;
+    margin-bottom: var(--spacing-lg);
+}
+
+.card-container {
+    perspective: 1000px;
+    margin-bottom: var(--spacing-2xl);
+    display: flex;
+    justify-content: center;
+}
+
+.digital-card {
+    width: 100%;
+    max-width: 400px;
+    height: 240px;
+    position: relative;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.card-front {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    background: linear-gradient(135deg, var(--color-primary-dark) 0%, var(--color-primary) 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    color: white;
+    box-shadow: var(--shadow-xl);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+/* Pattern overlay */
+.card-front::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 20%),
+        radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 20%);
+    pointer-events: none;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-logo {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xl);
+    font-weight: bold;
+}
+
+.card-tier {
+    background: rgba(255, 255, 255, 0.2);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.card-body {
+    text-align: center;
+}
+
+.points-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.points-value {
+    font-size: 4rem;
+    font-weight: var(--font-weight-extrabold);
+    line-height: 1;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.points-label {
+    font-size: var(--font-size-lg);
+    opacity: 0.9;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    font-family: monospace;
+}
+
+.card-holder {
+    font-size: var(--font-size-lg);
+    text-transform: uppercase;
+    max-width: 70%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-id {
+    font-size: var(--font-size-sm);
+    opacity: 0.8;
+}
+
+.rewards-section h2 {
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg);
+}
+
+.rewards-list {
+    display: grid;
+    gap: var(--spacing-md);
+}
+
+.reward-item {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.reward-icon {
+    font-size: 2rem;
+    background: var(--color-bg-secondary);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-full);
+}
+
+.reward-info {
+    flex: 1;
+}
+
+.reward-info h3 {
+    margin: 0;
+    font-size: var(--font-size-base);
+}
+
+.reward-info p {
+    margin: 0;
+    color: var(--color-primary);
+    font-weight: bold;
+    font-size: var(--font-size-sm);
+}
