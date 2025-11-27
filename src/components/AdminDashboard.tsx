@@ -5,6 +5,7 @@ import CategoryManagement from './admin/CategoryManagement';
 import PromotionManagement from './admin/PromotionManagement';
 import OrderManagement from './admin/OrderManagement';
 import CassaCloudSettings from './admin/CassaCloudSettings';
+import ModificationManagement from './admin/ModificationManagement';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -26,6 +27,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 return <OrderManagement />;
             case 'products':
                 return <ProductManagement />;
+            case 'modifications':
+                return <ModificationManagement />;
             case 'categories':
                 return <CategoryManagement />;
             case 'promotions':
@@ -57,6 +60,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         onClick={() => setActiveTab('products')}
                     >
                         🍕 Prodotti
+                    </button>
+                    <button
+                        className={`nav-item ${activeTab === 'modifications' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('modifications')}
+                    >
+                        🧀 Ingredienti
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'categories' ? 'active' : ''}`}
