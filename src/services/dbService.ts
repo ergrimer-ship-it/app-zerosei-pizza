@@ -158,14 +158,21 @@ export async function getUserByPhone(phone: string): Promise<UserProfile | null>
 
 export async function getAllUsers(): Promise<UserProfile[]> {
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, orderBy('createdAt', 'desc'));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-    } as UserProfile));
+    // Rimosso orderBy per evitare errori di indice mancante
+    // const q = query(usersRef, orderBy('createdAt', 'desc'));
+    try {
+        const snapshot = await getDocs(usersRef);
+        console.log(`Fetched ${snapshot.size} users`);
+        return snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate(),
+            updatedAt: doc.data().updatedAt?.toDate()
+        } as UserProfile));
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        return [];
+    }
 }
 
 // ============================================
