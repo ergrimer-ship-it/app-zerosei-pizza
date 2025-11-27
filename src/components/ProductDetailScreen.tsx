@@ -65,11 +65,7 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
 
     const handleAddToCart = () => {
         if (product) {
-            const productWithMods = {
-                ...product,
-                modifications: selectedModifications
-            };
-            const newCart = addToCart(cart, productWithMods, quantity, notes);
+            const newCart = addToCart(cart, product, quantity, notes, selectedModifications);
             setCart(newCart);
             navigate(-1); // Go back
         }
@@ -77,12 +73,8 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
 
     const handleOrderNow = () => {
         if (product) {
-            const productWithMods = {
-                ...product,
-                modifications: selectedModifications
-            };
             const tempCart = {
-                items: [{ product: productWithMods, quantity, notes }],
+                items: [{ product, quantity, notes, modifications: selectedModifications }],
                 total: getTotalPrice()
             };
 

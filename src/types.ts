@@ -48,11 +48,7 @@ export interface UserProfile {
 // CART TYPES
 // ============================================
 
-export interface CartItem {
-    product: Product;
-    quantity: number;
-    notes?: string;
-}
+
 
 export interface Cart {
     items: CartItem[];
