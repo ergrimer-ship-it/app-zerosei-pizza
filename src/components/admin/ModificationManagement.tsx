@@ -1,12 +1,18 @@
 import { useState, useEffect } from 'react';
 import { PizzaModification } from '../../types';
-import { AVAILABLE_MODIFICATIONS } from '../../data/modifications';
+import {
+    getModifications,
+    saveModification,
+    deleteModification,
+    toggleModificationAvailability
+} from '../../services/modificationService';
 import './ModificationManagement.css';
 
 function ModificationManagement() {
     const [modifications, setModifications] = useState<PizzaModification[]>([]);
     const [editingMod, setEditingMod] = useState<PizzaModification | null>(null);
     const [isAdding, setIsAdding] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState<Partial<PizzaModification>>({
         name: '',
         price: 0,
@@ -19,8 +25,11 @@ function ModificationManagement() {
         loadModifications();
     }, []);
 
-    const loadModifications = () => {
-        setModifications([...AVAILABLE_MODIFICATIONS]);
+    const loadModifications = async () => {
+        setLoading(true);
+        const mods = await getModifications();
+        setModifications(mods);
+        setLoading(false);
     };
 
     const handleEdit = (mod: PizzaModification) => {
@@ -42,7 +51,7 @@ function ModificationManagement() {
         });
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!formData.name || formData.price === undefined) {
             alert('Compila tutti i campi obbligatori');
             return;
@@ -57,25 +66,27 @@ function ModificationManagement() {
             category: formData.category || 'Altro'
         };
 
-        if (isAdding) {
-            setModifications([...modifications, newMod]);
-        } else if (editingMod) {
-            setModifications(modifications.map(m => m.id === editingMod.id ? newMod : m));
+        try {
+            await saveModification(newMod);
+            await loadModifications();
+            alert('Ingrediente salvato con successo!');
+            handleCancel();
+        } catch (error) {
+            console.error('Error saving modification:', error);
+            alert('Errore nel salvare l\'ingrediente');
         }
-
-        // In produzione, qui salveresti su Firestore
-        console.log('Modifiche salvate:', newMod);
-        alert('Ingrediente salvato! (Nota: in produzione verrebbe salvato su Firestore)');
-
-        handleCancel();
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('Sei sicuro di voler eliminare questo ingrediente?')) {
-            setModifications(modifications.filter(m => m.id !== id));
-            // In produzione, qui elimineresti da Firestore
-            console.log('Ingrediente eliminato:', id);
-            alert('Ingrediente eliminato! (Nota: in produzione verrebbe eliminato da Firestore)');
+            try {
+                await deleteModification(id);
+                await loadModifications();
+                alert('Ingrediente eliminato con successo!');
+            } catch (error) {
+                console.error('Error deleting modification:', error);
+                alert('Errore nell\'eliminare l\'ingrediente');
+            }
         }
     };
 
@@ -91,12 +102,22 @@ function ModificationManagement() {
         });
     };
 
-    const toggleAvailability = (id: string) => {
-        setModifications(modifications.map(m =>
-            m.id === id ? { ...m, available: !m.available } : m
-        ));
-        // In produzione, qui aggiorneresti su Firestore
+    const toggleAvailability = async (id: string) => {
+        const mod = modifications.find(m => m.id === id);
+        if (mod) {
+            try {
+                await toggleModificationAvailability(id, !mod.available);
+                await loadModifications();
+            } catch (error) {
+                console.error('Error toggling availability:', error);
+                alert('Errore nell\'aggiornare la disponibilità');
+            }
+        }
     };
+
+    if (loading) {
+        return <div className="modification-management"><p>Caricamento...</p></div>;
+    }
 
     return (
         <div className="modification-management">

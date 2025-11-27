@@ -4,7 +4,7 @@ import { Product, Cart, PizzaModification } from '../types';
 import { addToCart } from '../services/cartService';
 import { openWhatsApp } from '../services/whatsappService';
 import { getProductById } from '../services/dbService';
-import { AVAILABLE_MODIFICATIONS } from '../data/modifications';
+import { getModifications } from '../services/modificationService';
 import './ProductDetailScreen.css';
 
 interface ProductDetailScreenProps {
@@ -19,11 +19,18 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
     const [quantity, setQuantity] = useState(1);
     const [notes, setNotes] = useState('');
     const [selectedModifications, setSelectedModifications] = useState<PizzaModification[]>([]);
+    const [availableModifications, setAvailableModifications] = useState<PizzaModification[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadProduct();
+        loadAvailableModifications();
     }, [id]);
+
+    const loadAvailableModifications = async () => {
+        const mods = await getModifications();
+        setAvailableModifications(mods);
+    };
 
     const loadProduct = async () => {
         if (!id) return;
@@ -120,18 +127,18 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
                     {product.description || product.ingredients?.join(', ') || 'Nessuna descrizione disponibile'}
                 </p>
 
-                {product.category.includes('pizze') && (
+                {!product.category.includes('bevande') && !product.category.includes('birre') && (
                     <div className="modifications-section">
                         <h3>Aggiungi ingredienti</h3>
                         {['Formaggi', 'Salumi', 'Verdure', 'Altro'].map(category => {
-                            const categoryMods = AVAILABLE_MODIFICATIONS.filter(m => m.category === category && m.available);
+                            const categoryMods = availableModifications.filter((m: PizzaModification) => m.category === category && m.available);
                             if (categoryMods.length === 0) return null;
 
                             return (
                                 <div key={category} className="modification-category">
                                     <h4>{category}</h4>
                                     <div className="modification-grid">
-                                        {categoryMods.map(mod => (
+                                        {categoryMods.map((mod: PizzaModification) => (
                                             <button
                                                 key={mod.id}
                                                 className={`modification-btn ${selectedModifications.find(m => m.id === mod.id) ? 'selected' : ''}`}
