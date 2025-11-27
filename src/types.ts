@@ -40,6 +40,7 @@ export interface UserProfile {
     email: string;
     loyaltyPoints?: number;
     cassaCloudId?: string; // ID cliente in Cassa in Cloud
+    lastAccess?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

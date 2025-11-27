@@ -177,7 +177,8 @@ export async function getAllUsers(): Promise<UserProfile[]> {
                 id: doc.id,
                 ...data,
                 createdAt: convertToDate(data.createdAt),
-                updatedAt: convertToDate(data.updatedAt)
+                updatedAt: convertToDate(data.updatedAt),
+                lastAccess: convertToDate(data.lastAccess)
             } as UserProfile;
         });
     } catch (error) {

@@ -96,6 +96,7 @@ function CustomerManagement() {
                                 <th>Contatti</th>
                                 <th>Punti Fedeltà</th>
                                 <th>Registrato il</th>
+                                <th>Ultimo Accesso</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -118,6 +119,11 @@ function CustomerManagement() {
                                     <td>
                                         <span className="registration-date">
                                             {customer.createdAt ? new Date(customer.createdAt).toLocaleDateString('it-IT') : '-'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className="registration-date">
+                                            {customer.lastAccess ? new Date(customer.lastAccess).toLocaleDateString('it-IT') + ' ' + new Date(customer.lastAccess).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '-'}
                                         </span>
                                     </td>
                                 </tr>

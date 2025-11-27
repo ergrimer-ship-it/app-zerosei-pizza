@@ -13,6 +13,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
+import { updateUserProfile } from './services/dbService';
 import DebugProducts from './components/DebugProducts';
 
 function App() {
@@ -28,7 +29,14 @@ function App() {
         // Carica profilo utente da localStorage
         const savedProfile = localStorage.getItem('user_profile');
         if (savedProfile) {
-            setUserProfile(JSON.parse(savedProfile));
+            const profile = JSON.parse(savedProfile);
+            setUserProfile(profile);
+
+            // Aggiorna ultimo accesso su Firestore (se c'è un ID valido)
+            if (profile.id && !profile.id.startsWith('temp_')) {
+                updateUserProfile(profile.id, { lastAccess: new Date() })
+                    .catch(err => console.error("Error updating last access:", err));
+            }
         }
 
         // Verifica autenticazione admin
