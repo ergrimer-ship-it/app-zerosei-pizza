@@ -1,0 +1,149 @@
+.customer-management {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    min-height: 100%;
+}
+
+.customer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.customer-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.8rem;
+}
+
+.customer-stats {
+    display: flex;
+    gap: 20px;
+}
+
+.stat-card {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #e74c3c;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.search-bar {
+    margin-bottom: 20px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    border-color: #e74c3c;
+    outline: none;
+}
+
+.customers-table-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+}
+
+.customers-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.customers-table th,
+.customers-table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.customers-table th {
+    background-color: #f8f9fa;
+    color: #7f8c8d;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.customers-table tr:last-child td {
+    border-bottom: none;
+}
+
+.customers-table tr:hover {
+    background-color: #fcfcfc;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.customer-phone,
+.customer-email {
+    color: #7f8c8d;
+}
+
+.loyalty-points {
+    display: inline-block;
+    padding: 4px 12px;
+    background-color: #fff3cd;
+    color: #856404;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.registration-date {
+    color: #95a5a6;
+    font-size: 0.9rem;
+}
+
+.loading-state,
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #7f8c8d;
+}
+
+.loading-spinner {
+    font-size: 2rem;
+    margin-bottom: 10px;
+    display: block;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}

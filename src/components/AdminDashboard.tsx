@@ -6,6 +6,7 @@ import PromotionManagement from './admin/PromotionManagement';
 import OrderManagement from './admin/OrderManagement';
 import CassaCloudSettings from './admin/CassaCloudSettings';
 import ModificationManagement from './admin/ModificationManagement';
+import CustomerManagement from './admin/CustomerManagement';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -36,7 +37,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             case 'settings':
                 return <CassaCloudSettings />;
             case 'customers':
-                return <div className="placeholder-content">Gestione Clienti (In arrivo)</div>;
+                return <CustomerManagement />;
             default:
                 return <OrderManagement />;
         }
