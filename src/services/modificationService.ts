@@ -28,14 +28,18 @@ export async function getModifications(): Promise<PizzaModification[]> {
  */
 export async function saveModification(modification: PizzaModification): Promise<void> {
     try {
+        console.log('Saving modification:', modification);
         const modRef = doc(db, MODIFICATIONS_COLLECTION, modification.id);
-        await setDoc(modRef, {
+        const dataToSave = {
             name: modification.name,
             price: modification.price,
             type: modification.type,
             available: modification.available,
             category: modification.category
-        });
+        };
+        console.log('Data to save:', dataToSave);
+        await setDoc(modRef, dataToSave);
+        console.log('Modification saved successfully');
     } catch (error) {
         console.error('Error saving modification:', error);
         throw error;
