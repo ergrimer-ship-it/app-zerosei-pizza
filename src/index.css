@@ -19,46 +19,6 @@ body {
     color: var(--color-text);
     line-height: 1.6;
     overflow-x: hidden;
-}
-
-/* ============================================
-   CSS VARIABLES - DESIGN TOKENS
-   ============================================ */
-:root {
-    /* Colors - Italia Theme */
-    --color-primary: #E74C3C;
-    /* Rosso */
-    --color-primary-dark: #C0392B;
-    --color-primary-light: #EC7063;
-
-    --color-secondary: #27AE60;
-    /* Verde */
-    --color-secondary-dark: #229954;
-    --color-secondary-light: #58D68D;
-
-    --color-accent: #F39C12;
-    /* Arancione/Oro */
-    --color-accent-dark: #D68910;
-
-    --color-bg: #FFFFFF;
-    --color-bg-secondary: #F8F9FA;
-    --color-bg-tertiary: #ECF0F1;
-
-    --color-text: #2C3E50;
-    --color-text-secondary: #7F8C8D;
-    --color-text-light: #95A5A6;
-
-    --color-border: #E0E0E0;
-    --color-shadow: rgba(0, 0, 0, 0.1);
-
-    --color-success: #27AE60;
-    --color-error: #E74C3C;
-    --color-warning: #F39C12;
-    --color-info: #3498DB;
-
-    /* Spacing */
-    --spacing-xs: 0.25rem;
-    /* 4px */
     --spacing-sm: 0.5rem;
     /* 8px */
     --spacing-md: 1rem;

@@ -32,8 +32,11 @@ function HomeScreen() {
             {/* Hero Section */}
             <section className="hero">
                 <div className="hero-content">
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                        <img src="./logo-zerosei.png" alt="ZeroSei Pizza" style={{ height: '120px', width: 'auto' }} />
+                    </div>
                     <h1 className="hero-title">
-                        Benvenuto da <span className="highlight">ZeroSei</span> 🍕
+                        Benvenuto da <span className="highlight">ZeroSei</span>
                     </h1>
                     <p className="hero-subtitle">
                         La migliore pizza napoletana d'asporto della città
