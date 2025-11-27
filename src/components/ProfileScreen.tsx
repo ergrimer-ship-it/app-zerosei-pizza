@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
+import { createUserProfile, updateUserProfile, getUserByPhone } from '../services/dbService';
 import './ProfileScreen.css';
 
 interface ProfileScreenProps {
@@ -35,7 +36,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         // Basic validation
@@ -44,21 +45,47 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
             return;
         }
 
-        const newProfile: UserProfile = {
-            id: userProfile?.id || Date.now().toString(),
-            firstName: formData.firstName,
-            lastName: formData.lastName,
-            phone: formData.phone,
-            email: formData.email,
-            createdAt: userProfile?.createdAt || new Date(),
-            updatedAt: new Date()
-        };
+        try {
+            const newProfile: UserProfile = {
+                id: userProfile?.id || '', // ID will be set by Firestore if empty
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                email: formData.email,
+                loyaltyPoints: userProfile?.loyaltyPoints || 0,
+                createdAt: userProfile?.createdAt || new Date(),
+                updatedAt: new Date()
+            };
 
-        // Save to localStorage
-        localStorage.setItem('user_profile', JSON.stringify(newProfile));
-        setUserProfile(newProfile);
-        setIsEditing(false);
-        setMessage({ type: 'success', text: 'Profilo salvato con successo!' });
+            // Save to Firestore
+            if (userProfile?.id) {
+                // Update existing
+                await updateUserProfile(userProfile.id, newProfile);
+            } else {
+                // Create new
+                // Check if user with this phone already exists
+                const existingUser = await getUserByPhone(formData.phone);
+                if (existingUser) {
+                    // Update the existing user instead of creating duplicate
+                    newProfile.id = existingUser.id;
+                    newProfile.loyaltyPoints = existingUser.loyaltyPoints;
+                    newProfile.createdAt = existingUser.createdAt;
+                    await updateUserProfile(existingUser.id, newProfile);
+                } else {
+                    const newId = await createUserProfile(newProfile);
+                    newProfile.id = newId;
+                }
+            }
+
+            // Save to localStorage
+            localStorage.setItem('user_profile', JSON.stringify(newProfile));
+            setUserProfile(newProfile);
+            setIsEditing(false);
+            setMessage({ type: 'success', text: 'Profilo salvato con successo!' });
+        } catch (error) {
+            console.error('Error saving profile:', error);
+            setMessage({ type: 'error', text: 'Errore nel salvataggio del profilo. Riprova.' });
+        }
 
         // Clear message after 3 seconds
         setTimeout(() => setMessage(null), 3000);
