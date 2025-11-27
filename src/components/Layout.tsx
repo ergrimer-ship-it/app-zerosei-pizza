@@ -37,7 +37,8 @@ function Layout({ children, cart }: LayoutProps) {
                     </button>
 
                     <Link to="/" className="logo">
-                        <img src="./logo-zerosei.png" alt="ZeroSei Pizza" style={{ height: '50px', width: 'auto' }} />
+                        <span className="logo-text">ZeroSei</span>
+                        <span className="logo-emoji">🍕</span>
                     </Link>
 
                     <button
