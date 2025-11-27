@@ -156,6 +156,14 @@ export async function getUserByPhone(phone: string): Promise<UserProfile | null>
     return { id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate(), updatedAt: doc.data().updatedAt?.toDate() } as UserProfile;
 }
 
+// Helper per convertire date da Firestore (Timestamp, stringhe o Date)
+const convertToDate = (val: any): Date | undefined => {
+    if (!val) return undefined;
+    if (typeof val.toDate === 'function') return val.toDate(); // Firestore Timestamp
+    if (val instanceof Date) return val;
+    return new Date(val); // Stringa o numero
+};
+
 export async function getAllUsers(): Promise<UserProfile[]> {
     const usersRef = collection(db, 'users');
     // Rimosso orderBy per evitare errori di indice mancante
@@ -163,12 +171,15 @@ export async function getAllUsers(): Promise<UserProfile[]> {
     try {
         const snapshot = await getDocs(usersRef);
         console.log(`Fetched ${snapshot.size} users`);
-        return snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate(),
-            updatedAt: doc.data().updatedAt?.toDate()
-        } as UserProfile));
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                createdAt: convertToDate(data.createdAt),
+                updatedAt: convertToDate(data.updatedAt)
+            } as UserProfile;
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
         return [];
