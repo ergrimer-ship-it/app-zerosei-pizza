@@ -147,8 +147,8 @@ export async function openWhatsApp(
             source: 'whatsapp',
             deliveryAddress: orderDetails?.deliveryAddress
                 ? `${orderDetails.deliveryAddress.street}, ${orderDetails.deliveryAddress.city} (Campanello: ${orderDetails.deliveryAddress.doorbell})`
-                : undefined,
-            notes: orderDetails?.notes
+                : null,
+            notes: orderDetails?.notes || null
         };
 
         await createOrder(orderData);

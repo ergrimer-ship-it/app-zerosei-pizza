@@ -105,8 +105,8 @@ export interface Order {
     total: number;
     status: OrderStatus;
     source?: 'whatsapp' | 'phone' | 'web';
-    deliveryAddress?: string;
-    notes?: string;
+    deliveryAddress?: string | null;
+    notes?: string | null;
     createdAt: Date;
     updatedAt: Date;
 }

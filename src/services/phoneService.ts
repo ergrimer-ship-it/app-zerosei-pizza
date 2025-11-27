@@ -70,7 +70,7 @@ export async function callPizzeria(
                 notes: orderDetails?.notes || 'Ordine telefonico da app',
                 deliveryAddress: orderDetails?.deliveryType === 'delivery' && orderDetails?.deliveryAddress
                     ? `${orderDetails.deliveryAddress.street}, ${orderDetails.deliveryAddress.city} - ${orderDetails.deliveryAddress.doorbell}`
-                    : undefined
+                    : null
             };
 
             await createOrder(orderData);
