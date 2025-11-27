@@ -1,4 +1,4 @@
-import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from '../firebase';
 import type { Product, Category, UserProfile, Order, OrderStatus, PizzaModification, NewsPromotion, ProductCategory } from '../types';
@@ -144,7 +144,7 @@ export async function createUserProfile(profile: Omit<UserProfile, 'id' | 'creat
 
 export async function updateUserProfile(id: string, updates: Partial<UserProfile>): Promise<void> {
     const userRef = doc(db, 'users', id);
-    await updateDoc(userRef, { ...updates, updatedAt: Timestamp.now() });
+    await setDoc(userRef, { ...updates, updatedAt: Timestamp.now() }, { merge: true });
 }
 
 export async function getUserByPhone(phone: string): Promise<UserProfile | null> {
