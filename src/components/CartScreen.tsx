@@ -89,6 +89,32 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
         openWhatsApp(cart, userInfo, orderDetails);
     };
 
+    const handlePhoneCall = () => {
+        let userInfo;
+
+        if (userProfile) {
+            userInfo = {
+                name: `${userProfile.firstName} ${userProfile.lastName}`,
+                phone: userProfile.phone
+            };
+        } else if (guestName && guestPhone) {
+            userInfo = {
+                name: guestName,
+                phone: guestPhone
+            };
+        }
+
+        const orderDetails = {
+            deliveryType,
+            pickupTime,
+            deliveryAddress: deliveryType === 'delivery' ? { street, city, doorbell } : undefined,
+            paymentMethod,
+            notes: orderNotes
+        };
+
+        callPizzeria(cart, userInfo, orderDetails);
+    };
+
     if (cart.items.length === 0) {
         return (
             <div className="cart-screen empty fade-in">
@@ -171,10 +197,9 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
                 </div>
             </div>
 
-            {/* Quick Phone Order - No forms needed */}
             <div className="quick-order-section">
                 <p className="quick-order-hint">💡 <strong>Ordine veloce?</strong> Chiama direttamente!</p>
-                <button className="btn btn-secondary full-width" onClick={callPizzeria}>
+                <button className="btn btn-secondary full-width" onClick={handlePhoneCall}>
                     <span className="icon">📞</span> Chiama Ora - 045 618 0120
                 </button>
             </div>

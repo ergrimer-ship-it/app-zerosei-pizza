@@ -23,6 +23,10 @@ function HomeScreen() {
         openWhatsApp(cart, userInfo);
     };
 
+    const handlePhoneCall = () => {
+        callPizzeria(); // Call without cart data - just a quick call
+    };
+
     return (
         <div className="home-screen fade-in">
             {/* Hero Section */}
@@ -51,7 +55,7 @@ function HomeScreen() {
 
                     <button
                         className="cta-card cta-secondary"
-                        onClick={callPizzeria}
+                        onClick={handlePhoneCall}
                     >
                         <span className="cta-icon">📞</span>
                         <h3>Chiama Ora</h3>
