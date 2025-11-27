@@ -26,11 +26,16 @@ function CustomerManagement() {
 
     const filteredCustomers = customers.filter(customer => {
         const searchLower = searchTerm.toLowerCase();
+        const firstName = customer.firstName?.toLowerCase() || '';
+        const lastName = customer.lastName?.toLowerCase() || '';
+        const phone = customer.phone || '';
+        const email = customer.email?.toLowerCase() || '';
+
         return (
-            customer.firstName.toLowerCase().includes(searchLower) ||
-            customer.lastName.toLowerCase().includes(searchLower) ||
-            customer.phone.includes(searchTerm) ||
-            customer.email.toLowerCase().includes(searchLower)
+            firstName.includes(searchLower) ||
+            lastName.includes(searchLower) ||
+            phone.includes(searchTerm) ||
+            email.includes(searchLower)
         );
     });
 
@@ -50,7 +55,12 @@ function CustomerManagement() {
     return (
         <div className="customer-management fade-in">
             <div className="customer-header">
-                <h2>Gestione Clienti</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <h2>Gestione Clienti</h2>
+                    <button onClick={loadCustomers} className="btn-icon" title="Ricarica lista">
+                        🔄
+                    </button>
+                </div>
                 <div className="customer-stats">
                     <div className="stat-card">
                         <span className="stat-value">{customers.length}</span>
