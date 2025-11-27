@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Cart, UserProfile } from '../types';
+import { Cart, UserProfile, DeliveryType, PaymentMethod, OrderDetails } from '../types';
 import {
     updateQuantity,
     removeFromCart,
-    clearCart
+    clearCart,
+    calculateItemUnitPrice
 } from '../services/cartService';
 import { openWhatsApp } from '../services/whatsappService';
 import { callPizzeria } from '../services/phoneService';
@@ -21,13 +22,22 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
     const [guestName, setGuestName] = useState('');
     const [guestPhone, setGuestPhone] = useState('');
 
-    const handleQuantityChange = (productId: string, newQuantity: number) => {
-        const newCart = updateQuantity(cart, productId, newQuantity);
+    // Delivery options
+    const [deliveryType, setDeliveryType] = useState<DeliveryType>('pickup');
+    const [pickupTime, setPickupTime] = useState('');
+    const [street, setStreet] = useState('');
+    const [city, setCity] = useState('');
+    const [doorbell, setDoorbell] = useState('');
+    const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
+    const [orderNotes, setOrderNotes] = useState('');
+
+    const handleQuantityChange = (index: number, newQuantity: number) => {
+        const newCart = updateQuantity(cart, index, newQuantity);
         setCart(newCart);
     };
 
-    const handleRemoveItem = (productId: string) => {
-        const newCart = removeFromCart(cart, productId);
+    const handleRemoveItem = (index: number) => {
+        const newCart = removeFromCart(cart, index);
         setCart(newCart);
     };
 
@@ -56,7 +66,27 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
             return;
         }
 
-        openWhatsApp(cart, userInfo);
+        // Validate delivery options
+        if (deliveryType === 'delivery') {
+            if (!street || !city || !doorbell) {
+                alert('Per favore compila tutti i campi dell\'indirizzo di consegna.');
+                return;
+            }
+            if (!pickupTime) {
+                alert('Per favore seleziona un orario di consegna.');
+                return;
+            }
+        }
+
+        const orderDetails: OrderDetails = {
+            deliveryType,
+            pickupTime,
+            deliveryAddress: deliveryType === 'delivery' ? { street, city, doorbell } : undefined,
+            paymentMethod,
+            notes: orderNotes
+        };
+
+        openWhatsApp(cart, userInfo, orderDetails);
     };
 
     if (cart.items.length === 0) {
@@ -84,40 +114,54 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
             </div>
 
             <div className="cart-items">
-                {cart.items.map(item => (
-                    <div key={item.product.id} className="cart-item">
-                        <div className="item-info">
-                            <h3>{item.product.name}</h3>
-                            <p className="item-price">€{item.product.price.toFixed(2)} cad.</p>
-                            {item.notes && <p className="item-notes">📝 {item.notes}</p>}
-                        </div>
+                {cart.items.map((item, index) => {
+                    const unitPrice = calculateItemUnitPrice(item);
+                    return (
+                        <div key={`${item.product.id}-${index}`} className="cart-item">
+                            <div className="item-info">
+                                <h3>{item.product.name}</h3>
+                                <p className="item-price">€{unitPrice.toFixed(2)} cad.</p>
 
-                        <div className="item-actions">
-                            <div className="qty-control">
+                                {item.modifications && item.modifications.length > 0 && (
+                                    <div className="item-modifications">
+                                        {item.modifications.map(mod => (
+                                            <span key={mod.id} className="mod-tag">
+                                                + {mod.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {item.notes && <p className="item-notes">📝 {item.notes}</p>}
+                            </div>
+
+                            <div className="item-actions">
+                                <div className="qty-control">
+                                    <button
+                                        onClick={() => handleQuantityChange(index, item.quantity - 1)}
+                                    >
+                                        -
+                                    </button>
+                                    <span>{item.quantity}</span>
+                                    <button
+                                        onClick={() => handleQuantityChange(index, item.quantity + 1)}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                                <div className="item-total">
+                                    €{(unitPrice * item.quantity).toFixed(2)}
+                                </div>
                                 <button
-                                    onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
+                                    className="remove-btn"
+                                    onClick={() => handleRemoveItem(index)}
                                 >
-                                    -
-                                </button>
-                                <span>{item.quantity}</span>
-                                <button
-                                    onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
-                                >
-                                    +
+                                    🗑️
                                 </button>
                             </div>
-                            <div className="item-total">
-                                €{(item.product.price * item.quantity).toFixed(2)}
-                            </div>
-                            <button
-                                className="remove-btn"
-                                onClick={() => handleRemoveItem(item.product.id)}
-                            >
-                                🗑️
-                            </button>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             <div className="cart-summary">
@@ -125,44 +169,178 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
                     <span>Totale</span>
                     <span>€{cart.total.toFixed(2)}</span>
                 </div>
-                <p className="payment-info">💳 Pagamento in contanti alla consegna</p>
             </div>
 
-            {!userProfile && (
-                <div className="guest-info">
-                    <h3>I tuoi dati</h3>
-                    <div className="input-group">
-                        <input
-                            type="text"
-                            className="input"
-                            placeholder="Nome e Cognome"
-                            value={guestName}
-                            onChange={(e) => setGuestName(e.target.value)}
-                        />
-                    </div>
-                    <div className="input-group">
-                        <input
-                            type="tel"
-                            className="input"
-                            placeholder="Numero di Telefono"
-                            value={guestPhone}
-                            onChange={(e) => setGuestPhone(e.target.value)}
-                        />
-                    </div>
-                    <p className="guest-hint">
-                        <span onClick={() => navigate('/profile')} className="link">Crea un profilo</span> per non dover inserire i dati ogni volta.
-                    </p>
-                </div>
-            )}
+            {/* Quick Phone Order - No forms needed */}
+            <div className="quick-order-section">
+                <p className="quick-order-hint">💡 <strong>Ordine veloce?</strong> Chiama direttamente!</p>
+                <button className="btn btn-secondary full-width" onClick={callPizzeria}>
+                    <span className="icon">📞</span> Chiama Ora - 045 618 0120
+                </button>
+            </div>
 
-            <div className="cart-actions">
+            {/* WhatsApp Order - Requires delivery details */}
+            <div className="whatsapp-order-section">
+                <h3>Ordina su WhatsApp</h3>
+                <p className="section-hint">Compila i dettagli per ricevere il riepilogo completo</p>
+
+                {!userProfile && (
+                    <div className="guest-info-inline">
+                        <div className="input-group">
+                            <label htmlFor="guestName">Nome e Cognome *</label>
+                            <input
+                                type="text"
+                                id="guestName"
+                                className="input"
+                                placeholder="Nome e Cognome"
+                                value={guestName}
+                                onChange={(e) => setGuestName(e.target.value)}
+                            />
+                        </div>
+                        <div className="input-group">
+                            <label htmlFor="guestPhone">Telefono *</label>
+                            <input
+                                type="tel"
+                                id="guestPhone"
+                                className="input"
+                                placeholder="Numero di Telefono"
+                                value={guestPhone}
+                                onChange={(e) => setGuestPhone(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                )}
+
+                {/* Delivery Type Selection */}
+                <div className="delivery-options-wrapper">
+                    <label className="section-label">Modalità di Ritiro *</label>
+                    <div className="delivery-options">
+                        <button
+                            className={`delivery-option ${deliveryType === 'pickup' ? 'active' : ''}`}
+                            onClick={() => setDeliveryType('pickup')}
+                        >
+                            <span className="option-icon">🏪</span>
+                            <span className="option-label">Ritiro in Pizzeria</span>
+                        </button>
+                        <button
+                            className={`delivery-option ${deliveryType === 'delivery' ? 'active' : ''}`}
+                            onClick={() => setDeliveryType('delivery')}
+                        >
+                            <span className="option-icon">🏠</span>
+                            <span className="option-label">Consegna a Domicilio</span>
+                        </button>
+                    </div>
+
+                    {deliveryType === 'pickup' && (
+                        <div className="pickup-details">
+                            <label htmlFor="pickupTime">Orario Preferito (opzionale)</label>
+                            <input
+                                type="time"
+                                id="pickupTime"
+                                className="input"
+                                value={pickupTime}
+                                onChange={(e) => setPickupTime(e.target.value)}
+                            />
+                        </div>
+                    )}
+
+                    {deliveryType === 'delivery' && (
+                        <div className="delivery-details">
+                            <div className="input-group">
+                                <label htmlFor="street">Via e Numero Civico *</label>
+                                <input
+                                    type="text"
+                                    id="street"
+                                    className="input"
+                                    placeholder="Es: Via Roma, 123"
+                                    value={street}
+                                    onChange={(e) => setStreet(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label htmlFor="city">Paese/Città *</label>
+                                <input
+                                    type="text"
+                                    id="city"
+                                    className="input"
+                                    placeholder="Es: Verona"
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label htmlFor="doorbell">Nome sul Campanello *</label>
+                                <input
+                                    type="text"
+                                    id="doorbell"
+                                    className="input"
+                                    placeholder="Nome e Cognome"
+                                    value={doorbell}
+                                    onChange={(e) => setDoorbell(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="input-group">
+                                <label htmlFor="deliveryTime">Orario di Consegna *</label>
+                                <input
+                                    type="time"
+                                    id="deliveryTime"
+                                    className="input"
+                                    value={pickupTime}
+                                    onChange={(e) => setPickupTime(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <label className="section-label">Metodo di Pagamento *</label>
+                            <div className="payment-options">
+                                <button
+                                    className={`payment-option ${paymentMethod === 'cash' ? 'active' : ''}`}
+                                    onClick={() => setPaymentMethod('cash')}
+                                >
+                                    💵 Contanti
+                                </button>
+                                <button
+                                    className={`payment-option ${paymentMethod === 'pos' ? 'active' : ''}`}
+                                    onClick={() => setPaymentMethod('pos')}
+                                >
+                                    💳 POS
+                                </button>
+                                <button
+                                    className={`payment-option ${paymentMethod === 'satispay' ? 'active' : ''}`}
+                                    onClick={() => setPaymentMethod('satispay')}
+                                >
+                                    📱 Satispay
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="input-group">
+                        <label htmlFor="orderNotes">Note Aggiuntive (opzionale)</label>
+                        <textarea
+                            id="orderNotes"
+                            className="input"
+                            placeholder="Es: Suonare al citofono, non al campanello..."
+                            value={orderNotes}
+                            onChange={(e) => setOrderNotes(e.target.value)}
+                            rows={2}
+                        />
+                    </div>
+                </div>
+
                 <button className="btn btn-whatsapp full-width" onClick={handleWhatsAppOrder}>
                     <span className="icon">💬</span> Invia Ordine su WhatsApp
                 </button>
 
-                <button className="btn btn-secondary full-width" onClick={callPizzeria}>
-                    <span className="icon">📞</span> Ordina per Telefono
-                </button>
+                {!userProfile && (
+                    <p className="profile-hint">
+                        💡 <span onClick={() => navigate('/profile')} className="link">Crea un profilo</span> per salvare i tuoi dati
+                    </p>
+                )}
             </div>
         </div>
     );

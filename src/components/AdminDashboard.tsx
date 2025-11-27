@@ -1,118 +1,96 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ProductManagement from './admin/ProductManagement';
+import CategoryManagement from './admin/CategoryManagement';
+import PromotionManagement from './admin/PromotionManagement';
+import OrderManagement from './admin/OrderManagement';
+import CassaCloudSettings from './admin/CassaCloudSettings';
 import './AdminDashboard.css';
 
-function AdminDashboard() {
+interface AdminDashboardProps {
+    onLogout: () => void;
+}
+
+function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('orders');
 
-    const stats = {
-        todayOrders: 12,
-        todayRevenue: 345.50,
-        pendingOrders: 3,
-        totalCustomers: 156
+    const handleLogout = () => {
+        onLogout();
+        navigate('/admin/login');
+    };
+
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'orders':
+                return <OrderManagement />;
+            case 'products':
+                return <ProductManagement />;
+            case 'categories':
+                return <CategoryManagement />;
+            case 'promotions':
+                return <PromotionManagement />;
+            case 'settings':
+                return <CassaCloudSettings />;
+            case 'customers':
+                return <div className="placeholder-content">Gestione Clienti (In arrivo)</div>;
+            default:
+                return <OrderManagement />;
+        }
     };
 
     return (
-        <div className="admin-dashboard fade-in">
-            <div className="admin-header">
-                <h1>Pannello Amministratore</h1>
-                <button className="btn btn-outline" onClick={() => navigate('/')}>
-                    Torna al Sito
-                </button>
-            </div>
-
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <span className="stat-label">Ordini Oggi</span>
-                    <span className="stat-value">{stats.todayOrders}</span>
+        <div className="admin-dashboard">
+            <div className="admin-sidebar">
+                <div className="admin-logo">
+                    <h2>ZeroSei Admin</h2>
                 </div>
-                <div className="stat-card">
-                    <span className="stat-label">Incasso Oggi</span>
-                    <span className="stat-value">€{stats.todayRevenue.toFixed(2)}</span>
-                </div>
-                <div className="stat-card warning">
-                    <span className="stat-label">In Attesa</span>
-                    <span className="stat-value">{stats.pendingOrders}</span>
-                </div>
-                <div className="stat-card">
-                    <span className="stat-label">Clienti Totali</span>
-                    <span className="stat-value">{stats.totalCustomers}</span>
-                </div>
-            </div>
-
-            <div className="admin-content">
-                <div className="admin-sidebar">
+                <nav className="admin-nav">
                     <button
-                        className={`admin-nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
                         onClick={() => setActiveTab('orders')}
                     >
                         📦 Ordini
                     </button>
                     <button
-                        className={`admin-nav-item ${activeTab === 'products' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'products' ? 'active' : ''}`}
                         onClick={() => setActiveTab('products')}
                     >
                         🍕 Prodotti
                     </button>
                     <button
-                        className={`admin-nav-item ${activeTab === 'categories' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'categories' ? 'active' : ''}`}
                         onClick={() => setActiveTab('categories')}
                     >
                         📂 Categorie
                     </button>
                     <button
-                        className={`admin-nav-item ${activeTab === 'promotions' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'promotions' ? 'active' : ''}`}
                         onClick={() => setActiveTab('promotions')}
                     >
                         📢 Promozioni
                     </button>
                     <button
-                        className={`admin-nav-item ${activeTab === 'customers' ? 'active' : ''}`}
+                        className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}
                         onClick={() => setActiveTab('customers')}
                     >
                         👥 Clienti
                     </button>
+                    <button
+                        className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('settings')}
+                    >
+                        ⚙️ Impostazioni
+                    </button>
+                </nav>
+                <div className="admin-footer">
+                    <button className="btn-logout" onClick={handleLogout}>
+                        ← Logout
+                    </button>
                 </div>
-
-                <div className="admin-panel">
-                    {activeTab === 'orders' && (
-                        <div className="placeholder-panel">
-                            <h2>Gestione Ordini</h2>
-                            <p>Qui potrai visualizzare e gestire gli ordini in arrivo.</p>
-                            {/* TODO: Implement Order List */}
-                        </div>
-                    )}
-
-                    {activeTab === 'products' && (
-                        <div className="placeholder-panel">
-                            <h2>Gestione Prodotti</h2>
-                            <p>Qui potrai aggiungere, modificare o eliminare i prodotti.</p>
-                            {/* TODO: Implement Product List */}
-                        </div>
-                    )}
-
-                    {activeTab === 'categories' && (
-                        <div className="placeholder-panel">
-                            <h2>Gestione Categorie</h2>
-                            <p>Qui potrai gestire le categorie del menù.</p>
-                        </div>
-                    )}
-
-                    {activeTab === 'promotions' && (
-                        <div className="placeholder-panel">
-                            <h2>Gestione Promozioni</h2>
-                            <p>Qui potrai creare nuove offerte e news.</p>
-                        </div>
-                    )}
-
-                    {activeTab === 'customers' && (
-                        <div className="placeholder-panel">
-                            <h2>Gestione Clienti</h2>
-                            <p>Qui potrai visualizzare la lista dei clienti registrati.</p>
-                        </div>
-                    )}
-                </div>
+            </div>
+            <div className="admin-content">
+                {renderContent()}
             </div>
         </div>
     );

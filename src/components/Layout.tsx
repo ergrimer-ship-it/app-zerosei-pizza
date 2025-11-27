@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Cart, UserProfile } from '../types';
 import { getCartItemCount } from '../services/cartService';
+import PromotionPopup from './PromotionPopup';
 import './Layout.css';
 
 interface LayoutProps {
@@ -22,7 +23,6 @@ function Layout({ children, cart }: LayoutProps) {
         { path: '/', label: 'Home', icon: '🏠' },
         { path: '/menu', label: 'Menù', icon: '🍕' },
         { path: '/news', label: 'Novità e Offerte', icon: '📰' },
-        { path: '/modifications', label: 'Modifica Pizza', icon: '💰' },
         { path: '/fidelity', label: 'Fidelity Card', icon: '🎁' },
         { path: '/profile', label: 'Profilo', icon: '👤' },
     ];
@@ -102,6 +102,9 @@ function Layout({ children, cart }: LayoutProps) {
                     <p>&copy; 2025 ZeroSei Pizza. Tutti i diritti riservati.</p>
                 </div>
             </footer>
+
+            {/* Promotion Popup */}
+            <PromotionPopup />
         </div>
     );
 }

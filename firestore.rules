@@ -1,0 +1,39 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Products - Public read, admin write
+    match /products/{productId} {
+      allow read: if true;  // Everyone can read products
+      allow write: if true; // Temporarily allow all writes for testing
+    }
+    
+    // Categories - Public read, admin write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Orders - Authenticated users
+    match /orders/{orderId} {
+      allow read, write: if true;
+    }
+    
+    // Users - Authenticated users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+    
+    // Promotions - Public read, admin write
+    match /promotions/{promotionId} {
+      allow read: if true;
+      allow write: if true;
+    }
+    
+    // Allow all for testing - CHANGE THIS IN PRODUCTION!
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

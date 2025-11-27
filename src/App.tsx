@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import HomeScreen from './components/HomeScreen';
@@ -8,17 +8,19 @@ import ProductDetailScreen from './components/ProductDetailScreen';
 import CartScreen from './components/CartScreen';
 import ProfileScreen from './components/ProfileScreen';
 import NewsOffersScreen from './components/NewsOffersScreen';
-import ModificationsScreen from './components/ModificationsScreen';
 import FidelityCardScreen from './components/FidelityCardScreen';
+import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
+import DebugProducts from './components/DebugProducts';
 
 function App() {
     const [cart, setCart] = useState<Cart>({ items: [], total: 0 });
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
 
-    // Carica carrello e profilo utente all'avvio
+    // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
         const savedCart = loadCart();
         setCart(savedCart);
@@ -28,13 +30,41 @@ function App() {
         if (savedProfile) {
             setUserProfile(JSON.parse(savedProfile));
         }
+
+        // Verifica autenticazione admin
+        const adminAuth = localStorage.getItem('admin_authenticated');
+        setIsAdminAuthenticated(adminAuth === 'true');
     }, []);
+
+    const handleAdminLogin = () => {
+        setIsAdminAuthenticated(true);
+    };
+
+    const handleAdminLogout = () => {
+        localStorage.removeItem('admin_authenticated');
+        setIsAdminAuthenticated(false);
+    };
 
     return (
         <Router>
             <Routes>
-                {/* Admin Route - No Layout */}
-                <Route path="/admin" element={<AdminDashboard />} />
+                {/* Admin Routes */}
+                <Route
+                    path="/admin/login"
+                    element={
+                        isAdminAuthenticated ?
+                            <Navigate to="/admin/dashboard" replace /> :
+                            <AdminLogin onLogin={handleAdminLogin} />
+                    }
+                />
+                <Route
+                    path="/admin/*"
+                    element={
+                        isAdminAuthenticated ?
+                            <AdminDashboard onLogout={handleAdminLogout} /> :
+                            <Navigate to="/admin/login" replace />
+                    }
+                />
 
                 {/* Public Routes - With Layout */}
                 <Route path="*" element={
@@ -47,8 +77,8 @@ function App() {
                             <Route path="/cart" element={<CartScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
                             <Route path="/profile" element={<ProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />} />
                             <Route path="/news" element={<NewsOffersScreen />} />
-                            <Route path="/modifications" element={<ModificationsScreen />} />
                             <Route path="/fidelity" element={<FidelityCardScreen userProfile={userProfile} />} />
+                            <Route path="/debug" element={<DebugProducts />} />
                         </Routes>
                     </Layout>
                 } />

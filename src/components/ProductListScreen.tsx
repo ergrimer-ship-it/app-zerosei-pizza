@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Product, Cart } from '../types';
+import { Product, Cart, ProductCategory } from '../types';
 import { addToCart } from '../services/cartService';
+import { getProductsByCategory } from '../services/dbService';
 import './ProductListScreen.css';
 
 interface ProductListScreenProps {
@@ -16,88 +17,43 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(true);
 
-    // Mock data for development
     useEffect(() => {
-        // In a real app, this would fetch from dbService
-        const mockProducts: Product[] = [
-            {
-                id: '1',
-                name: 'Margherita',
-                category: 'pizze-veraci',
-                ingredients: ['Pomodoro San Marzano DOP', 'Fior di latte', 'Basilico', 'Olio EVO'],
-                price: 6.50,
-                available: true,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            },
-            {
-                id: '2',
-                name: 'Bufalina',
-                category: 'pizze-veraci',
-                ingredients: ['Pomodoro San Marzano DOP', 'Mozzarella di Bufala', 'Basilico', 'Olio EVO'],
-                price: 8.50,
-                available: true,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            },
-            {
-                id: '3',
-                name: 'Diavola',
-                category: 'pizze-classiche',
-                ingredients: ['Pomodoro', 'Fior di latte', 'Salame piccante', 'Basilico'],
-                price: 7.50,
-                available: true,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            },
-            {
-                id: '4',
-                name: 'Capricciosa',
-                category: 'pizze-classiche',
-                ingredients: ['Pomodoro', 'Fior di latte', 'Prosciutto cotto', 'Funghi', 'Carciofini', 'Olive'],
-                price: 8.50,
-                available: true,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            },
-            {
-                id: '5',
-                name: 'ZeroSei Special',
-                category: 'nostre-proposte',
-                ingredients: ['Crema di zucca', 'Provola', 'Salsiccia', 'Chips di zucca'],
-                price: 10.00,
-                available: true,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            },
-            {
-                id: '6',
-                name: 'Calzone Classico',
-                category: 'calzoni',
-                ingredients: ['Ricotta', 'Salame', 'Fior di latte', 'Pomodoro'],
-                price: 8.00,
-                available: true,
-                createdAt: new Date(),
-                updatedAt: new Date()
-            }
-        ];
-
-        const filtered = mockProducts.filter(p => p.category === category);
-        setProducts(filtered);
-        setLoading(false);
+        loadProducts();
     }, [category]);
 
-    const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.ingredients.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    const loadProducts = async () => {
+        setLoading(true);
+        console.log('🔍 ProductListScreen: Loading products for category:', category);
+        try {
+            if (category) {
+                const data = await getProductsByCategory(category as ProductCategory);
+                console.log('✅ ProductListScreen: Products loaded:', data.length, data);
+                setProducts(data);
+            } else {
+                console.log('⚠️ ProductListScreen: No category specified');
+            }
+        } catch (error) {
+            console.error('❌ ProductListScreen: Error loading products:', error);
+        }
+        setLoading(false);
+    };
+
+    const filteredProducts = products
+        .filter(product =>
+            product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (product.ingredients?.some(ing => ing.toLowerCase().includes(searchTerm.toLowerCase())) ?? false) ||
+            (product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false)
+        )
+        .sort((a, b) => b.price - a.price); // Sort by price descending (most expensive first)
 
     const getCategoryTitle = (cat: string | undefined) => {
         switch (cat) {
             case 'pizze-veraci': return 'Pizze Veraci';
-            case 'nostre-proposte': return 'Le Nostre Proposte';
-            case 'calzoni': return 'Calzoni';
             case 'pizze-classiche': return 'Pizze Classiche';
+            case 'proposte': return 'Le Nostre Proposte';
+            case 'calzoni': return 'Calzoni';
+            case 'bevande': return 'Bevande';
+            case 'birre': return 'Birre';
             default: return 'Prodotti';
         }
     };
@@ -106,7 +62,6 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
         e.stopPropagation();
         const newCart = addToCart(cart, product, 1);
         setCart(newCart);
-        // Optional: show toast notification
     };
 
     return (
@@ -140,7 +95,7 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
                         >
                             <div className="product-info">
                                 <h3>{product.name}</h3>
-                                <p className="ingredients">{product.ingredients.join(', ')}</p>
+                                <p className="ingredients">{product.description || product.ingredients?.join(', ') || ''}</p>
                                 <p className="price">€{product.price.toFixed(2)}</p>
                             </div>
                             <button

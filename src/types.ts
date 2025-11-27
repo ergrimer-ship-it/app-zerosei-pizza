@@ -2,25 +2,28 @@
 // PRODUCT TYPES
 // ============================================
 
-export type ProductCategory = 'pizze-veraci' | 'nostre-proposte' | 'calzoni' | 'pizze-classiche';
+export type ProductCategory = 'pizze-veraci' | 'pizze-classiche' | 'proposte' | 'calzoni' | 'bevande' | 'birre';
 
 export interface Product {
     id: string;
     name: string;
     category: ProductCategory;
-    ingredients: string[];
+    description?: string;
+    ingredients?: string[];
     price: number;
+    image?: string;
     imageUrl?: string;
     available: boolean;
     featured?: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export interface Category {
     id: string;
     name: string;
     description?: string;
+    icon?: string;
     order: number;
     imageUrl?: string;
 }
@@ -57,6 +60,28 @@ export interface Cart {
 }
 
 // ============================================
+// DELIVERY & ORDER TYPES
+// ============================================
+
+export type DeliveryType = 'pickup' | 'delivery';
+export type PaymentMethod = 'cash' | 'pos' | 'satispay';
+
+export interface DeliveryAddress {
+    street: string;
+    city: string;
+    doorbell: string; // Nome e cognome sul campanello
+}
+
+export interface OrderDetails {
+    deliveryType: DeliveryType;
+    pickupTime?: string; // Orario preferito per ritiro
+    deliveryAddress?: DeliveryAddress;
+    paymentMethod: PaymentMethod;
+    notes?: string;
+}
+
+
+// ============================================
 // ORDER TYPES
 // ============================================
 
@@ -68,6 +93,7 @@ export interface OrderItem {
     quantity: number;
     price: number;
     notes?: string;
+    modifications?: PizzaModification[];
 }
 
 export interface Order {
@@ -82,6 +108,7 @@ export interface Order {
     items: OrderItem[];
     total: number;
     status: OrderStatus;
+    source?: 'whatsapp' | 'phone' | 'web';
     deliveryAddress?: string;
     notes?: string;
     createdAt: Date;
@@ -100,10 +127,19 @@ export interface PizzaModification {
     price: number;
     type: ModificationType;
     available: boolean;
+    category?: string;
 }
 
 // ============================================
-// NEWS & PROMOTIONS TYPES
+// CART TYPES
+// ============================================
+
+export interface CartItem {
+    product: Product;
+    quantity: number;
+    notes?: string;
+    modifications?: PizzaModification[];
+}
 // ============================================
 
 export interface NewsPromotion {
@@ -114,6 +150,7 @@ export interface NewsPromotion {
     validFrom: Date;
     validTo: Date;
     active: boolean;
+    showAsPopup?: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

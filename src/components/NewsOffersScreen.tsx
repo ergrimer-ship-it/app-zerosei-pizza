@@ -1,48 +1,93 @@
+import { useState, useEffect } from 'react';
+import { getAllPromotions } from '../services/dbService';
+import type { NewsPromotion } from '../types';
 import './NewsOffersScreen.css';
 
 function NewsOffersScreen() {
-    const news = [
-        {
-            id: 1,
-            title: 'Nuova Pizza del Mese: La Zucca',
-            description: 'Vieni a provare la nostra nuova pizza con crema di zucca, provola affumicata e salsiccia fresca.',
-            date: '24 Nov 2025',
-            image: '🎃'
-        },
-        {
-            id: 2,
-            title: 'Consegna Gratuita',
-            description: 'Per ordini superiori a 30€ la consegna è gratuita in tutta la zona!',
-            date: '20 Nov 2025',
-            image: '🛵'
-        },
-        {
-            id: 3,
-            title: 'Apertura Straordinaria',
-            description: 'Siamo aperti anche a pranzo tutte le domeniche di Dicembre.',
-            date: '15 Nov 2025',
-            image: '📅'
+    const [promotions, setPromotions] = useState<NewsPromotion[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadPromotions();
+    }, []);
+
+    const loadPromotions = async () => {
+        try {
+            const data = await getAllPromotions();
+            // Filter only active promotions
+            const activePromotions = data.filter(p => p.active);
+            setPromotions(activePromotions);
+        } catch (error) {
+            console.error('Error loading promotions:', error);
         }
-    ];
+        setLoading(false);
+    };
+
+    const formatDate = (date: Date) => {
+        return new Date(date).toLocaleDateString('it-IT', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const isPromotionValid = (promotion: NewsPromotion) => {
+        const now = new Date();
+        return now >= new Date(promotion.validFrom) && now <= new Date(promotion.validTo);
+    };
+
+    if (loading) {
+        return (
+            <div className="news-screen fade-in">
+                <h1 className="screen-title">Novità e Offerte</h1>
+                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    Caricamento offerte...
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="news-screen fade-in">
             <h1 className="screen-title">Novità e Offerte</h1>
 
-            <div className="news-grid">
-                {news.map(item => (
-                    <div key={item.id} className="news-card">
-                        <div className="news-icon">{item.image}</div>
-                        <div className="news-content">
-                            <span className="news-date">{item.date}</span>
-                            <h3>{item.title}</h3>
-                            <p>{item.description}</p>
+            {promotions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                    <p>Nessuna offerta disponibile al momento.</p>
+                    <p style={{ fontSize: '0.9rem', marginTop: '8px' }}>
+                        Torna presto per scoprire le nostre promozioni!
+                    </p>
+                </div>
+            ) : (
+                <div className="news-grid">
+                    {promotions.map(promotion => (
+                        <div key={promotion.id} className="news-card">
+                            {promotion.imageUrl ? (
+                                <img
+                                    src={promotion.imageUrl}
+                                    alt={promotion.title}
+                                    className="news-image"
+                                />
+                            ) : (
+                                <div className="news-icon">🎉</div>
+                            )}
+                            <div className="news-content">
+                                <span className="news-date">
+                                    {formatDate(promotion.validFrom)} - {formatDate(promotion.validTo)}
+                                </span>
+                                {!isPromotionValid(promotion) && (
+                                    <span className="news-badge expired">Scaduta</span>
+                                )}
+                                <h3>{promotion.title}</h3>
+                                <p>{promotion.description}</p>
+                            </div>
                         </div>
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
 
 export default NewsOffersScreen;
+

@@ -16,13 +16,47 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
     useEffect(() => {
         if (userProfile) {
             setLoading(true);
-            // Use mock ID or real ID if available
-            const customerId = userProfile.cassaCloudId || 'mock-customer-id';
 
-            getLoyaltyPoints(customerId).then(data => {
-                setLoyaltyData(data);
-                setLoading(false);
-            });
+            const fetchPoints = async () => {
+                let customerId = userProfile.cassaCloudId;
+                console.log('Initial customerId from profile:', customerId);
+
+                // Se non abbiamo l'ID, proviamo a cercarlo
+                if (!customerId) {
+                    try {
+                        console.log('Searching for customer profile with:', userProfile.email, userProfile.phone);
+                        // Importiamo dinamicamente per evitare dipendenze circolari se ce ne fossero
+                        const { linkCustomerProfile } = await import('../services/cassaCloudService');
+                        const foundId = await linkCustomerProfile(userProfile);
+                        console.log('Search result foundId:', foundId);
+
+                        if (foundId) {
+                            customerId = foundId;
+                            // Qui dovremmo idealmente aggiornare il profilo utente nel DB con il nuovo ID
+                            console.log('Found Cassa in Cloud ID:', customerId);
+                        } else {
+                            console.warn('Customer not found in Cassa in Cloud');
+                        }
+                    } catch (err) {
+                        console.error('Error linking profile:', err);
+                    }
+                }
+
+                if (customerId) {
+                    console.log('Fetching points for customerId:', customerId);
+                    getLoyaltyPoints(customerId).then(data => {
+                        console.log('Loyalty data received:', data);
+                        setLoyaltyData(data);
+                        setLoading(false);
+                    });
+                } else {
+                    console.log('No customerId available, skipping points fetch');
+                    // Se ancora non abbiamo ID, mostriamo dati vuoti ma non carichiamo all'infinito
+                    setLoading(false);
+                }
+            };
+
+            fetchPoints();
         }
     }, [userProfile]);
 

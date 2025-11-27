@@ -1,4 +1,4 @@
-import { Cart, CartItem, Product } from '../types';
+import { Cart, CartItem, Product, PizzaModification } from '../types';
 
 const CART_STORAGE_KEY = 'zerosei_cart';
 
@@ -35,35 +35,68 @@ export function saveCart(cart: Cart): void {
 }
 
 /**
+ * Calcola il prezzo unitario di un item (prodotto + modifiche)
+ */
+export function calculateItemUnitPrice(item: CartItem): number {
+    const modificationsPrice = item.modifications
+        ? item.modifications.reduce((sum, mod) => sum + mod.price, 0)
+        : 0;
+    return item.product.price + modificationsPrice;
+}
+
+/**
  * Calcola il totale del carrello
  */
 export function calculateTotal(items: CartItem[]): number {
     return items.reduce((total, item) => {
-        return total + (item.product.price * item.quantity);
+        const unitPrice = calculateItemUnitPrice(item);
+        return total + (unitPrice * item.quantity);
     }, 0);
+}
+
+/**
+ * Genera una chiave unica per le modifiche per confronto
+ */
+function getModificationsKey(modifications?: PizzaModification[]): string {
+    if (!modifications || modifications.length === 0) return '';
+    return modifications
+        .map(m => m.id)
+        .sort()
+        .join('|');
 }
 
 /**
  * Aggiunge un prodotto al carrello
  */
-export function addToCart(cart: Cart, product: Product, quantity: number = 1, notes?: string): Cart {
-    const existingItemIndex = cart.items.findIndex(item => item.product.id === product.id);
+export function addToCart(
+    cart: Cart,
+    product: Product,
+    quantity: number = 1,
+    notes?: string,
+    modifications?: PizzaModification[]
+): Cart {
+    const modificationsKey = getModificationsKey(modifications);
+
+    const existingItemIndex = cart.items.findIndex(item => {
+        const itemModKey = getModificationsKey(item.modifications);
+        return item.product.id === product.id && itemModKey === modificationsKey;
+    });
 
     let newItems: CartItem[];
 
     if (existingItemIndex >= 0) {
-        // Prodotto già nel carrello, aggiorna quantità
+        // Prodotto identico (stesse modifiche) già nel carrello, aggiorna quantità
         newItems = [...cart.items];
         newItems[existingItemIndex] = {
             ...newItems[existingItemIndex],
             quantity: newItems[existingItemIndex].quantity + quantity,
-            notes: notes || newItems[existingItemIndex].notes
+            notes: notes ? (newItems[existingItemIndex].notes ? `${newItems[existingItemIndex].notes}, ${notes}` : notes) : newItems[existingItemIndex].notes
         };
     } else {
-        // Nuovo prodotto
+        // Nuovo prodotto o combinazione diversa
         newItems = [
             ...cart.items,
-            { product, quantity, notes }
+            { product, quantity, notes, modifications }
         ];
     }
 
@@ -78,9 +111,10 @@ export function addToCart(cart: Cart, product: Product, quantity: number = 1, no
 
 /**
  * Rimuove un prodotto dal carrello
+ * Nota: Rimuove l'item specifico (con quelle modifiche)
  */
-export function removeFromCart(cart: Cart, productId: string): Cart {
-    const newItems = cart.items.filter(item => item.product.id !== productId);
+export function removeFromCart(cart: Cart, productIndex: number): Cart {
+    const newItems = cart.items.filter((_, index) => index !== productIndex);
 
     const newCart: Cart = {
         items: newItems,
@@ -94,13 +128,13 @@ export function removeFromCart(cart: Cart, productId: string): Cart {
 /**
  * Aggiorna la quantità di un prodotto nel carrello
  */
-export function updateQuantity(cart: Cart, productId: string, quantity: number): Cart {
+export function updateQuantity(cart: Cart, productIndex: number, quantity: number): Cart {
     if (quantity <= 0) {
-        return removeFromCart(cart, productId);
+        return removeFromCart(cart, productIndex);
     }
 
-    const newItems = cart.items.map(item => {
-        if (item.product.id === productId) {
+    const newItems = cart.items.map((item, index) => {
+        if (index === productIndex) {
             return { ...item, quantity };
         }
         return item;
@@ -109,26 +143,6 @@ export function updateQuantity(cart: Cart, productId: string, quantity: number):
     const newCart: Cart = {
         items: newItems,
         total: calculateTotal(newItems)
-    };
-
-    saveCart(newCart);
-    return newCart;
-}
-
-/**
- * Aggiorna le note di un prodotto nel carrello
- */
-export function updateNotes(cart: Cart, productId: string, notes: string): Cart {
-    const newItems = cart.items.map(item => {
-        if (item.product.id === productId) {
-            return { ...item, notes };
-        }
-        return item;
-    });
-
-    const newCart: Cart = {
-        items: newItems,
-        total: cart.total
     };
 
     saveCart(newCart);
@@ -149,19 +163,4 @@ export function clearCart(): Cart {
  */
 export function getCartItemCount(cart: Cart): number {
     return cart.items.reduce((count, item) => count + item.quantity, 0);
-}
-
-/**
- * Verifica se un prodotto è nel carrello
- */
-export function isInCart(cart: Cart, productId: string): boolean {
-    return cart.items.some(item => item.product.id === productId);
-}
-
-/**
- * Ottiene la quantità di un prodotto specifico nel carrello
- */
-export function getProductQuantity(cart: Cart, productId: string): number {
-    const item = cart.items.find(item => item.product.id === productId);
-    return item ? item.quantity : 0;
 }
