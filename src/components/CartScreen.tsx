@@ -49,6 +49,7 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
     };
 
     const handleWhatsAppOrder = () => {
+        console.log('WhatsApp order button clicked');
         let userInfo;
 
         if (userProfile) {
@@ -86,10 +87,12 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
             notes: orderNotes
         };
 
+        console.log('Opening WhatsApp with:', { cart, userInfo, orderDetails });
         openWhatsApp(cart, userInfo, orderDetails);
     };
 
     const handlePhoneCall = () => {
+        console.log('Phone call button clicked');
         let userInfo;
 
         if (userProfile) {
@@ -112,6 +115,7 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
             notes: orderNotes
         };
 
+        console.log('Calling pizzeria with:', { cart, userInfo, orderDetails });
         callPizzeria(cart, userInfo, orderDetails);
     };
 

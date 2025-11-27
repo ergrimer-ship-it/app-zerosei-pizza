@@ -23,11 +23,9 @@ export async function callPizzeria(
     userInfo?: { name: string; phone: string },
     orderDetails?: any
 ): Promise<void> {
-    // 1. Apri il telefono immediatamente
-    window.location.href = generatePhoneLink();
-
-    // 2. Salva l'ordine nel database in background
+    // 1. Salva l'ordine nel database
     try {
+        console.log('Saving phone order...');
         // Se non ci sono dati del carrello, salva solo l'evento della chiamata
         if (!cart || cart.items.length === 0) {
             const orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -46,42 +44,44 @@ export async function callPizzeria(
             };
             await createOrder(orderData);
             console.log('Phone call event saved to Firestore');
-            return;
+        } else {
+            // Converti i dati del carrello in OrderItems
+            const orderItems = cart.items.map(item => ({
+                productId: item.product.id,
+                productName: item.product.name,
+                quantity: item.quantity,
+                price: item.product.price,
+                notes: item.notes,
+                modifications: item.modifications
+            }));
+
+            const orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
+                userId: 'guest',
+                userProfile: {
+                    firstName: userInfo?.name.split(' ')[0] || 'Cliente',
+                    lastName: userInfo?.name.split(' ').slice(1).join(' ') || 'Telefonico',
+                    phone: userInfo?.phone || '',
+                    email: ''
+                },
+                items: orderItems,
+                total: cart.total,
+                status: 'pending',
+                source: 'phone',
+                notes: orderDetails?.notes || 'Ordine telefonico da app',
+                deliveryAddress: orderDetails?.deliveryType === 'delivery' && orderDetails?.deliveryAddress
+                    ? `${orderDetails.deliveryAddress.street}, ${orderDetails.deliveryAddress.city} - ${orderDetails.deliveryAddress.doorbell}`
+                    : undefined
+            };
+
+            await createOrder(orderData);
+            console.log('Phone order saved to Firestore with cart data');
         }
-
-        // Converti i dati del carrello in OrderItems
-        const orderItems = cart.items.map(item => ({
-            productId: item.product.id,
-            productName: item.product.name,
-            quantity: item.quantity,
-            price: item.product.price,
-            notes: item.notes,
-            modifications: item.modifications
-        }));
-
-        const orderData: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
-            userId: 'guest',
-            userProfile: {
-                firstName: userInfo?.name.split(' ')[0] || 'Cliente',
-                lastName: userInfo?.name.split(' ').slice(1).join(' ') || 'Telefonico',
-                phone: userInfo?.phone || '',
-                email: ''
-            },
-            items: orderItems,
-            total: cart.total,
-            status: 'pending',
-            source: 'phone',
-            notes: orderDetails?.notes || 'Ordine telefonico da app',
-            deliveryAddress: orderDetails?.deliveryType === 'delivery' && orderDetails?.deliveryAddress
-                ? `${orderDetails.deliveryAddress.street}, ${orderDetails.deliveryAddress.city} - ${orderDetails.deliveryAddress.doorbell}`
-                : undefined
-        };
-
-        await createOrder(orderData);
-        console.log('Phone order saved to Firestore with cart data');
     } catch (error) {
         console.error('Error saving phone order:', error);
     }
+
+    // 2. Apri il telefono dopo aver salvato (o tentato di salvare)
+    window.location.href = generatePhoneLink();
 }
 
 /**
