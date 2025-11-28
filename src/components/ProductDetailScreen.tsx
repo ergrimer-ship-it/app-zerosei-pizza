@@ -103,44 +103,77 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
     if (loading) return <div className="loading">Caricamento...</div>;
     if (!product) return <div className="error">Prodotto non trovato</div>;
 
+    // Helper to determine the best image to show
+    const getDisplayImage = () => {
+        if (product.imageUrl && product.imageUrl.startsWith('http')) return product.imageUrl;
+        if (product.image && product.image.startsWith('http')) return product.image;
+        return product.imageUrl || product.image;
+    };
+
+    const displayImage = getDisplayImage();
+
     return (
+        <div className="product-detail-screen fade-in">
+            <button className="back-btn-floating" onClick={() => navigate(-1)}>
+                ←
+            </button>
+
+            <div className="product-image-container">
+                {displayImage ? (
+                    <img
+                        src={displayImage}
+                        alt={product.name}
+                        className="product-image"
+                        onError={(e) => {
+                            console.error('Error loading image:', displayImage);
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                    />
+                ) : (
+                    <div className="product-image-placeholder">🍕</div>
+                )}
+                {/* Fallback placeholder if image error */}
+                <div className="product-image-placeholder hidden">🍕</div>
+            </div>
+
+            <div className="product-details-content">
+                <div className="product-header">
                     <h1>{product.name}</h1>
                     <span className="product-price">€{product.price.toFixed(2)}</span>
-                </div >
+                </div>
 
-        <p className="product-ingredients">
-            {product.description || product.ingredients?.join(', ') || 'Nessuna descrizione disponibile'}
-        </p>
+                <p className="product-ingredients">
+                    {product.description || product.ingredients?.join(', ') || 'Nessuna descrizione disponibile'}
+                </p>
 
-    {
-        !product.category.includes('bevande') && !product.category.includes('birre') && (
-            <div className="modifications-section">
-                <h3>Aggiungi ingredienti</h3>
-                {['Formaggi', 'Salumi', 'Verdure', 'Altro'].map(category => {
-                    const categoryMods = availableModifications.filter((m: PizzaModification) => m.category === category && m.available);
-                    if (categoryMods.length === 0) return null;
+                {!product.category.includes('bevande') && !product.category.includes('birre') && (
+                    <div className="modifications-section">
+                        <h3>Aggiungi ingredienti</h3>
+                        {['Formaggi', 'Salumi', 'Verdure', 'Altro'].map(category => {
+                            const categoryMods = availableModifications.filter((m: PizzaModification) => m.category === category && m.available);
+                            if (categoryMods.length === 0) return null;
 
-                    return (
-                        <div key={category} className="modification-category">
-                            <h4>{category}</h4>
-                            <div className="modification-grid">
-                                {categoryMods.map((mod: PizzaModification) => (
-                                    <button
-                                        key={mod.id}
-                                        className={`modification-btn ${selectedModifications.find(m => m.id === mod.id) ? 'selected' : ''}`}
-                                        onClick={() => toggleModification(mod)}
-                                    >
-                                        <span className="mod-name">{mod.name}</span>
-                                        <span className="mod-price">+€{mod.price.toFixed(2)}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        )
-    }
+                            return (
+                                <div key={category} className="modification-category">
+                                    <h4>{category}</h4>
+                                    <div className="modification-grid">
+                                        {categoryMods.map((mod: PizzaModification) => (
+                                            <button
+                                                key={mod.id}
+                                                className={`modification-btn ${selectedModifications.find(m => m.id === mod.id) ? 'selected' : ''}`}
+                                                onClick={() => toggleModification(mod)}
+                                            >
+                                                <span className="mod-name">{mod.name}</span>
+                                                <span className="mod-price">+€{mod.price.toFixed(2)}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 <div className="notes-section">
                     <label htmlFor="notes">Note per la cucina</label>
@@ -179,8 +212,8 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
                         Ordina subito su WhatsApp
                     </button>
                 </div>
-            </div >
-        </div >
+            </div>
+        </div>
     );
 }
 

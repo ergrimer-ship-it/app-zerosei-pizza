@@ -103,25 +103,52 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
                 <div className="loading">Caricamento...</div>
             ) : (
                 <div className="products-grid">
-                    className="add-btn"
-                    onClick={(e) => handleAddToCart(e, product)}
-                            >
-                    +
-                </button>
-                        </div>
-    ))
-}
+                    {filteredProducts.map(product => {
+                        // Determine best image
+                        const displayImage = (product.imageUrl?.startsWith('http') ? product.imageUrl : null)
+                            || (product.image?.startsWith('http') ? product.image : null)
+                            || product.imageUrl
+                            || product.image;
 
-{
-    filteredProducts.length === 0 && (
-        <div className="no-results">
-            <p>Nessun prodotto trovato.</p>
-        </div>
-    )
-}
-                </div >
+                        return (
+                            <div
+                                key={product.id}
+                                className="product-card"
+                                onClick={() => navigate(`/product/${product.id}`)}
+                            >
+                                {displayImage && (
+                                    <div className="product-list-image-container">
+                                        <img
+                                            src={displayImage}
+                                            alt={product.name}
+                                            className="product-list-image"
+                                            onError={(e) => e.currentTarget.style.display = 'none'}
+                                        />
+                                    </div>
+                                )}
+                                <div className="product-info">
+                                    <h3>{product.name}</h3>
+                                    <p className="ingredients">{product.description || product.ingredients?.join(', ') || ''}</p>
+                                    <p className="price">€{product.price.toFixed(2)}</p>
+                                </div>
+                                <button
+                                    className="add-btn"
+                                    onClick={(e) => handleAddToCart(e, product)}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        );
+                    })}
+
+                    {filteredProducts.length === 0 && (
+                        <div className="no-results">
+                            <p>Nessun prodotto trovato.</p>
+                        </div>
+                    )}
+                </div>
             )}
-        </div >
+        </div>
     );
 }
 
