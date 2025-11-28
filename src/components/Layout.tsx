@@ -16,6 +16,7 @@ interface LayoutProps {
 function Layout({ children, cart }: LayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [logoUrl, setLogoUrl] = useState('');
+    const [logoSize, setLogoSize] = useState(60);
     const navigate = useNavigate();
     const cartItemCount = getCartItemCount(cart);
 
@@ -24,8 +25,13 @@ function Layout({ children, cart }: LayoutProps) {
             try {
                 const docRef = doc(db, 'config', 'general');
                 const docSnap = await getDoc(docRef);
-                if (docSnap.exists() && docSnap.data().logoUrl) {
-                    setLogoUrl(docSnap.data().logoUrl);
+                if (docSnap.exists()) {
+                    if (docSnap.data().logoUrl) {
+                        setLogoUrl(docSnap.data().logoUrl);
+                    }
+                    if (docSnap.data().logoSize) {
+                        setLogoSize(docSnap.data().logoSize);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading logo:', error);
@@ -56,7 +62,7 @@ function Layout({ children, cart }: LayoutProps) {
 
                     <Link to="/" className="logo">
                         {logoUrl ? (
-                            <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: '60px', objectFit: 'contain' }} />
+                            <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: `${logoSize}px`, objectFit: 'contain' }} />
                         ) : (
                             <>
                                 <span className="logo-text">ZeroSei</span>

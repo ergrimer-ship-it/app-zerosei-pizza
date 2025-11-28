@@ -7,6 +7,7 @@ import './Settings.css';
 
 function Settings() {
     const [logoUrl, setLogoUrl] = useState('');
+    const [logoSize, setLogoSize] = useState(60);
     const [uploading, setUploading] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -21,6 +22,7 @@ function Settings() {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 setLogoUrl(docSnap.data().logoUrl || '');
+                setLogoSize(docSnap.data().logoSize || 60);
             }
         } catch (error) {
             console.error('Error loading settings:', error);
@@ -40,7 +42,7 @@ function Settings() {
             setLogoUrl(url);
 
             // Auto-save after upload
-            await saveSettings(url);
+            await saveSettings(url, logoSize);
         } catch (error) {
             console.error('Error uploading image:', error);
             alert('Errore durante il caricamento dell\'immagine');
@@ -48,13 +50,21 @@ function Settings() {
         setUploading(false);
     };
 
-    const saveSettings = async (url: string) => {
+    const handleSizeChange = async (newSize: number) => {
+        setLogoSize(newSize);
+        if (logoUrl) {
+            await saveSettings(logoUrl, newSize);
+        }
+    };
+
+    const saveSettings = async (url: string, size: number) => {
         try {
             await setDoc(doc(db, 'config', 'general'), {
                 logoUrl: url,
+                logoSize: size,
                 updatedAt: new Date()
             }, { merge: true });
-            alert('Logo aggiornato con successo!');
+            alert('Impostazioni aggiornate con successo!');
         } catch (error) {
             console.error('Error saving settings:', error);
             alert('Errore nel salvataggio delle impostazioni');
@@ -76,7 +86,12 @@ function Settings() {
                 <div className="logo-upload-container">
                     <div className="current-logo">
                         {logoUrl ? (
-                            <img src={logoUrl} alt="Logo attuale" className="logo-preview" />
+                            <img
+                                src={logoUrl}
+                                alt="Logo attuale"
+                                className="logo-preview"
+                                style={{ height: `${logoSize}px`, objectFit: 'contain' }}
+                            />
                         ) : (
                             <div className="logo-placeholder">Nessun logo</div>
                         )}
@@ -95,6 +110,28 @@ function Settings() {
                         </label>
                     </div>
                 </div>
+
+                {logoUrl && (
+                    <div className="size-control">
+                        <label htmlFor="logoSize">
+                            Dimensione Logo: <strong>{logoSize}px</strong>
+                        </label>
+                        <input
+                            id="logoSize"
+                            type="range"
+                            min="30"
+                            max="100"
+                            step="5"
+                            value={logoSize}
+                            onChange={(e) => handleSizeChange(Number(e.target.value))}
+                            className="size-slider"
+                        />
+                        <div className="size-hints">
+                            <span>Piccolo (30px)</span>
+                            <span>Grande (100px)</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <hr className="settings-divider" />
