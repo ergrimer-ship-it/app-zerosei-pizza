@@ -2,10 +2,11 @@ rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Allow authenticated users (admins) to upload product images
+    // Allow anyone to read and write product images
+    // NOTE: This is a temporary solution. For production, implement Firebase Authentication for admins.
     match /products/{imageId} {
       allow read: if true; // Anyone can read product images
-      allow write: if request.auth != null; // Only authenticated users can upload
+      allow write: if true; // Anyone can upload (temporary - should be authenticated admins only)
     }
     
     // Deny all other paths by default
