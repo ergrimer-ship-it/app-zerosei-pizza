@@ -56,7 +56,7 @@ function Layout({ children, cart }: LayoutProps) {
 
                     <Link to="/" className="logo">
                         {logoUrl ? (
-                            <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: '40px', objectFit: 'contain' }} />
+                            <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: '60px', objectFit: 'contain' }} />
                         ) : (
                             <>
                                 <span className="logo-text">ZeroSei</span>
