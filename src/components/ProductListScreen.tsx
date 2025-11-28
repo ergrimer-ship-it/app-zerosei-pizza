@@ -5,6 +5,22 @@ import { addToCart } from '../services/cartService';
 import { getProductsByCategory } from '../services/dbService';
 import './ProductListScreen.css';
 
+/* Add these styles to ProductListScreen.css if not already present */
+/* 
+.product-list-image-container {
+    width: 100%;
+    height: 150px;
+    overflow: hidden;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.product-list-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+*/
+
 interface ProductListScreenProps {
     cart: Cart;
     setCart: (cart: Cart) => void;
@@ -93,6 +109,16 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
                             className="product-card"
                             onClick={() => navigate(`/product/${product.id}`)}
                         >
+                            {(product.imageUrl || product.image) && (
+                                <div className="product-list-image-container">
+                                    <img
+                                        src={product.imageUrl || product.image}
+                                        alt={product.name}
+                                        className="product-list-image"
+                                        onError={(e) => e.currentTarget.style.display = 'none'}
+                                    />
+                                </div>
+                            )}
                             <div className="product-info">
                                 <h3>{product.name}</h3>
                                 <p className="ingredients">{product.description || product.ingredients?.join(', ') || ''}</p>
