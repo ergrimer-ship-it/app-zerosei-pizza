@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Product, ProductCategory } from '../../types';
 import { getAllProductsForAdmin, createProduct, updateProduct, deleteProduct } from '../../services/dbService';
+import { storage } from '../../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './ProductManagement.css';
 
 interface ProductFormData {
@@ -18,6 +20,7 @@ function ProductManagement() {
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [uploading, setUploading] = useState(false);
 
     const [formData, setFormData] = useState<ProductFormData>({
         name: '',
@@ -86,6 +89,28 @@ function ProductManagement() {
         } catch (error) {
             console.error('Error deleting product:', error);
             alert('Errore nell\'eliminazione del prodotto');
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        try {
+            const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(storageRef);
+            
+            setFormData(prev => ({
+                ...prev,
+                image: downloadURL
+            }));
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('Errore durante il caricamento dell\'immagine');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -185,16 +210,29 @@ function ProductManagement() {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>URL Immagine prodotto</label>
+                                <label>Immagine prodotto</label>
+                                <div className="image-upload-container">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
+                                        className="file-input"
+                                    />
+                                    {uploading && <span className="upload-status">Caricamento in corso...</span>}
+                                    {formData.image && formData.image !== '/placeholder-pizza.jpg' && (
+                                        <div className="image-preview">
+                                            <img src={formData.image} alt="Anteprima" style={{ height: '50px', objectFit: 'cover', marginTop: '10px', borderRadius: '4px' }} />
+                                        </div>
+                                    )}
+                                </div>
                                 <input
                                     type="text"
-                                    placeholder="Incolla qui il link dell'immagine (es. Google Drive)"
+                                    placeholder="O incolla URL immagine"
                                     value={formData.image}
                                     onChange={e => setFormData({ ...formData, image: e.target.value })}
+                                    style={{ marginTop: '10px' }}
                                 />
-                                <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>
-                                    Carica l'immagine su Google Drive e incolla qui il link diretto
-                                </small>
                             </div>
                         </div>
                         <div className="form-group">
@@ -207,7 +245,7 @@ function ProductManagement() {
                             </label>
                         </div>
                         <div className="form-actions">
-                            <button type="submit" className="btn btn-primary">
+                            <button type="submit" className="btn btn-primary" disabled={uploading}>
                                 {editingProduct ? 'Aggiorna' : 'Crea'} Prodotto
                             </button>
                             <button type="button" className="btn btn-outline" onClick={resetForm}>
