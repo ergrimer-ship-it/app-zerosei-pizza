@@ -110,11 +110,22 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
             </button>
 
             <div className="product-image-container">
-                {product.imageUrl ? (
-                    <img src={product.imageUrl} alt={product.name} className="product-image" />
+                {(product.imageUrl || product.image) ? (
+                    <img
+                        src={product.imageUrl || product.image}
+                        alt={product.name}
+                        className="product-image"
+                        onError={(e) => {
+                            console.error('Error loading image:', product.imageUrl || product.image);
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                        }}
+                    />
                 ) : (
                     <div className="product-image-placeholder">🍕</div>
                 )}
+                {/* Fallback placeholder if image error */}
+                <div className="product-image-placeholder hidden">🍕</div>
             </div>
 
             <div className="product-details-content">
