@@ -1,7 +1,9 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Cart, UserProfile } from '../types';
 import { getCartItemCount } from '../services/cartService';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import PromotionPopup from './PromotionPopup';
 import './Layout.css';
 
@@ -13,8 +15,24 @@ interface LayoutProps {
 
 function Layout({ children, cart }: LayoutProps) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [logoUrl, setLogoUrl] = useState('');
     const navigate = useNavigate();
     const cartItemCount = getCartItemCount(cart);
+
+    useEffect(() => {
+        const loadLogo = async () => {
+            try {
+                const docRef = doc(db, 'config', 'general');
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists() && docSnap.data().logoUrl) {
+                    setLogoUrl(docSnap.data().logoUrl);
+                }
+            } catch (error) {
+                console.error('Error loading logo:', error);
+            }
+        };
+        loadLogo();
+    }, []);
 
     const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
     const closeSidebar = () => setSidebarOpen(false);
@@ -37,8 +55,14 @@ function Layout({ children, cart }: LayoutProps) {
                     </button>
 
                     <Link to="/" className="logo">
-                        <span className="logo-text">ZeroSei</span>
-                        <span className="logo-emoji">🍕</span>
+                        {logoUrl ? (
+                            <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: '40px', objectFit: 'contain' }} />
+                        ) : (
+                            <>
+                                <span className="logo-text">ZeroSei</span>
+                                <span className="logo-emoji">🍕</span>
+                            </>
+                        )}
                     </Link>
 
                     <button
