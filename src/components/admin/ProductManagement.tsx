@@ -50,11 +50,17 @@ function ProductManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Ensure both image and imageUrl are set for compatibility
+            const productData = {
+                ...formData,
+                imageUrl: formData.image // Copy image to imageUrl for compatibility
+            };
+
             if (editingProduct) {
-                await updateProduct(editingProduct.id, formData);
+                await updateProduct(editingProduct.id, productData);
                 alert('Prodotto aggiornato con successo!');
             } else {
-                await createProduct(formData);
+                await createProduct(productData);
                 alert('Prodotto creato con successo!');
             }
             resetForm();
@@ -101,7 +107,7 @@ function ProductManagement() {
             const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
             await uploadBytes(storageRef, file);
             const downloadURL = await getDownloadURL(storageRef);
-            
+
             setFormData(prev => ({
                 ...prev,
                 image: downloadURL
