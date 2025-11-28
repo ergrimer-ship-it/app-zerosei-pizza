@@ -119,6 +119,16 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
                                     />
                                 </div>
                             )}
+                            {(product.imageUrl || product.image) && (
+                                <div className="product-list-image-container">
+                                    <img
+                                        src={product.imageUrl || product.image}
+                                        alt={product.name}
+                                        className="product-list-image"
+                                        onError={(e) => e.currentTarget.style.display = 'none'}
+                                    />
+                                </div>
+                            )}
                             <div className="product-info">
                                 <h3>{product.name}</h3>
                                 <p className="ingredients">{product.description || product.ingredients?.join(', ') || ''}</p>
