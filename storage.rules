@@ -8,6 +8,11 @@ service firebase.storage {
       allow read: if true; // Anyone can read product images
       allow write: if true; // Anyone can upload (temporary - should be authenticated admins only)
     }
+
+    match /config/{imageId} {
+      allow read: if true;
+      allow write: if true;
+    }
     
     // Deny all other paths by default
     match /{allPaths=**} {

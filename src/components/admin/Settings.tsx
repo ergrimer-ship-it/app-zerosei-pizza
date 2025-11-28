@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { storage, db } from '../../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import CassaCloudSettings from './CassaCloudSettings';
 import './Settings.css';
 
 function Settings() {
@@ -95,6 +96,10 @@ function Settings() {
                     </div>
                 </div>
             </div>
+
+            <hr className="settings-divider" />
+
+            <CassaCloudSettings />
         </div>
     );
 }
