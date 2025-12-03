@@ -7,6 +7,7 @@ import OrderManagement from './admin/OrderManagement';
 import Settings from './admin/Settings';
 import ModificationManagement from './admin/ModificationManagement';
 import CustomerManagement from './admin/CustomerManagement';
+import { useTheme } from '../hooks/useTheme';
 import './AdminDashboard.css';
 
 interface AdminDashboardProps {
@@ -16,6 +17,7 @@ interface AdminDashboardProps {
 function AdminDashboard({ onLogout }: AdminDashboardProps) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('orders');
+    const { theme } = useTheme();
 
     const handleLogout = () => {
         onLogout();
@@ -54,43 +56,43 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
                         onClick={() => setActiveTab('orders')}
                     >
-                        📦 Ordini
+                        {theme?.iconOrders || '📦'} Ordini
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'products' ? 'active' : ''}`}
                         onClick={() => setActiveTab('products')}
                     >
-                        🍕 Prodotti
+                        {theme?.iconProducts || '🍕'} Prodotti
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'modifications' ? 'active' : ''}`}
                         onClick={() => setActiveTab('modifications')}
                     >
-                        🧀 Ingredienti
+                        {theme?.iconIngredients || '🧀'} Ingredienti
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'categories' ? 'active' : ''}`}
                         onClick={() => setActiveTab('categories')}
                     >
-                        📂 Categorie
+                        {theme?.iconCategories || '📂'} Categorie
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'promotions' ? 'active' : ''}`}
                         onClick={() => setActiveTab('promotions')}
                     >
-                        📢 Promozioni
+                        {theme?.iconPromotions || '📢'} Promozioni
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}
                         onClick={() => setActiveTab('customers')}
                     >
-                        👥 Clienti
+                        {theme?.iconCustomers || '👥'} Clienti
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
                         onClick={() => setActiveTab('settings')}
                     >
-                        ⚙️ Impostazioni
+                        {theme?.iconSettings || '⚙️'} Impostazioni
                     </button>
                 </nav>
                 <div className="admin-footer">

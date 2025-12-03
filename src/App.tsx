@@ -14,12 +14,16 @@ import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
 import { updateUserProfile } from './services/dbService';
+import { useTheme } from './hooks/useTheme';
 import DebugProducts from './components/DebugProducts';
 
 function App() {
     const [cart, setCart] = useState<Cart>({ items: [], total: 0 });
     const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+    // Carica tema personalizzato
+    useTheme();
 
     // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
