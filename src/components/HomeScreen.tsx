@@ -1,11 +1,92 @@
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { callPizzeria, getFormattedPhoneNumber } from '../services/phoneService';
 import { openWhatsApp } from '../services/whatsappService';
 import { loadCart } from '../services/cartService';
 import './HomeScreen.css';
 
+interface HomeButton {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+    color: string;
+    visible: boolean;
+    order: number;
+}
+
+interface HomeConfig {
+    heroTitle: string;
+    heroSubtitle: string;
+    buttons: HomeButton[];
+}
+
+const defaultConfig: HomeConfig = {
+    heroTitle: 'Benvenuto da ZeroSei 🍕',
+    heroSubtitle: 'La migliore pizza napoletana d\'asporto della città',
+    buttons: [
+        {
+            id: 'menu',
+            icon: '🍕',
+            title: 'Menù',
+            description: 'Scopri le nostre pizze',
+            color: '#E74C3C',
+            visible: true,
+            order: 1
+        },
+        {
+            id: 'phone',
+            icon: '📞',
+            title: 'Chiama Ora',
+            description: getFormattedPhoneNumber(),
+            color: '#27AE60',
+            visible: true,
+            order: 2
+        },
+        {
+            id: 'whatsapp',
+            icon: '💬',
+            title: 'Ordina su WhatsApp',
+            description: 'Ordine rapido e facile',
+            color: '#25D366',
+            visible: true,
+            order: 3
+        },
+        {
+            id: 'fidelity',
+            icon: '🎁',
+            title: 'Fidelity Card',
+            description: 'I tuoi punti fedeltà',
+            color: '#F39C12',
+            visible: true,
+            order: 4
+        }
+    ]
+};
+
 function HomeScreen() {
     const navigate = useNavigate();
+    const [config, setConfig] = useState<HomeConfig>(defaultConfig);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadConfig();
+    }, []);
+
+    const loadConfig = async () => {
+        try {
+            const docRef = doc(db, 'config', 'home');
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setConfig({ ...defaultConfig, ...docSnap.data() as HomeConfig });
+            }
+        } catch (error) {
+            console.error('Error loading home config:', error);
+        }
+        setLoading(false);
+    };
 
     const handleWhatsAppClick = () => {
         const cart = loadCart();
@@ -24,8 +105,36 @@ function HomeScreen() {
     };
 
     const handlePhoneCall = () => {
-        callPizzeria(); // Call without cart data - just a quick call
+        callPizzeria();
     };
+
+    const handleButtonClick = (buttonId: string) => {
+        switch (buttonId) {
+            case 'menu':
+                navigate('/menu');
+                break;
+            case 'phone':
+                handlePhoneCall();
+                break;
+            case 'whatsapp':
+                handleWhatsAppClick();
+                break;
+            case 'fidelity':
+                navigate('/fidelity');
+                break;
+            default:
+                break;
+        }
+    };
+
+    if (loading) {
+        return <div className="home-screen fade-in"><div className="loading">Caricamento...</div></div>;
+    }
+
+    // Sort buttons by order and filter visible ones
+    const visibleButtons = config.buttons
+        .filter(btn => btn.visible)
+        .sort((a, b) => a.order - b.order);
 
     return (
         <div className="home-screen fade-in">
@@ -33,10 +142,10 @@ function HomeScreen() {
             <section className="hero">
                 <div className="hero-content">
                     <h1 className="hero-title">
-                        Benvenuto da <span className="highlight">ZeroSei</span> 🍕
+                        {config.heroTitle}
                     </h1>
                     <p className="hero-subtitle">
-                        La migliore pizza napoletana d'asporto della città
+                        {config.heroSubtitle}
                     </p>
                 </div>
             </section>
@@ -44,41 +153,21 @@ function HomeScreen() {
             {/* CTA Buttons */}
             <section className="cta-section">
                 <div className="cta-grid">
-                    <button
-                        className="cta-card cta-primary"
-                        onClick={() => navigate('/menu')}
-                    >
-                        <span className="cta-icon">🍕</span>
-                        <h3>Menù</h3>
-                        <p>Scopri le nostre pizze</p>
-                    </button>
-
-                    <button
-                        className="cta-card cta-secondary"
-                        onClick={handlePhoneCall}
-                    >
-                        <span className="cta-icon">📞</span>
-                        <h3>Chiama Ora</h3>
-                        <p>{getFormattedPhoneNumber()}</p>
-                    </button>
-
-                    <button
-                        className="cta-card cta-whatsapp"
-                        onClick={handleWhatsAppClick}
-                    >
-                        <span className="cta-icon">💬</span>
-                        <h3>Ordina su WhatsApp</h3>
-                        <p>Ordine rapido e facile</p>
-                    </button>
-
-                    <button
-                        className="cta-card cta-fidelity"
-                        onClick={() => navigate('/fidelity')}
-                    >
-                        <span className="cta-icon">🎁</span>
-                        <h3>Fidelity Card</h3>
-                        <p>I tuoi punti fedeltà</p>
-                    </button>
+                    {visibleButtons.map((button) => (
+                        <button
+                            key={button.id}
+                            className="cta-card"
+                            style={{
+                                background: `linear-gradient(135deg, ${button.color} 0%, ${button.color}dd 100%)`,
+                                borderColor: button.color
+                            }}
+                            onClick={() => handleButtonClick(button.id)}
+                        >
+                            <span className="cta-icon">{button.icon}</span>
+                            <h3>{button.title}</h3>
+                            <p>{button.description}</p>
+                        </button>
+                    ))}
                 </div>
             </section>
 
@@ -144,3 +233,4 @@ function HomeScreen() {
 }
 
 export default HomeScreen;
+

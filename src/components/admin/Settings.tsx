@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import CassaCloudSettings from './CassaCloudSettings';
 import ThemeCustomizer from './ThemeCustomizer';
+import HomeCustomizer from './HomeCustomizer';
 import './Settings.css';
 
 function Settings() {
@@ -134,6 +135,10 @@ function Settings() {
                     </div>
                 )}
             </div>
+
+            <hr className="settings-divider" />
+
+            <HomeCustomizer />
 
             <hr className="settings-divider" />
 
