@@ -254,7 +254,7 @@ function HomeScreen() {
                         📘 Facebook
                     </a>
                     <a
-                        href="https://zerosei.it"
+                        href="https://www.zeroseilapizzadasporto.it"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-btn website"
