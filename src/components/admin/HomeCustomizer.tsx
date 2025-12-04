@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { db } from '../../firebase';
+import { db, storage } from '../../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import './HomeCustomizer.css';
+import './HomeCustomizerImages.css';
 
 interface HomeButton {
     id: string;
     icon: string;
+    imageUrl?: string; // URL dell'immagine personalizzata
     title: string;
     description: string;
     color: string;
@@ -58,6 +61,15 @@ const defaultConfig: HomeConfig = {
             color: '#F39C12',
             visible: true,
             order: 4
+        },
+        {
+            id: 'news',
+            icon: '🎉',
+            title: 'Novità e Offerte',
+            description: 'Scopri le ultime promozioni',
+            color: '#9B59B6',
+            visible: true,
+            order: 5
         }
     ]
 };
@@ -66,6 +78,7 @@ function HomeCustomizer() {
     const [config, setConfig] = useState<HomeConfig>(defaultConfig);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState<string | null>(null);
 
     useEffect(() => {
         loadConfig();
@@ -159,6 +172,30 @@ function HomeCustomizer() {
         setConfig(prev => ({ ...prev, buttons }));
     };
 
+    const handleImageUpload = async (buttonId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingImage(buttonId);
+        try {
+            const storageRef = ref(storage, `home-buttons/${buttonId}_${Date.now()}_${file.name}`);
+            await uploadBytes(storageRef, file);
+            const url = await getDownloadURL(storageRef);
+            updateButton(buttonId, 'imageUrl', url);
+            alert('✅ Immagine caricata con successo!');
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            alert('❌ Errore nel caricamento dell\'immagine');
+        }
+        setUploadingImage(null);
+    };
+
+    const removeImage = (buttonId: string) => {
+        if (confirm('Vuoi rimuovere l\'immagine e tornare all\'icona emoji?')) {
+            updateButton(buttonId, 'imageUrl', undefined);
+        }
+    };
+
     if (loading) return <div className="loading">Caricamento...</div>;
 
     return (
@@ -205,7 +242,15 @@ function HomeCustomizer() {
                         <div key={button.id} className={`button-card ${!button.visible ? 'disabled' : ''}`}>
                             <div className="button-card-header">
                                 <div className="button-preview" style={{ backgroundColor: button.color }}>
-                                    <span className="preview-icon">{button.icon}</span>
+                                    {button.imageUrl ? (
+                                        <img
+                                            src={button.imageUrl}
+                                            alt={button.title}
+                                            className="preview-image"
+                                        />
+                                    ) : (
+                                        <span className="preview-icon">{button.icon}</span>
+                                    )}
                                     <div className="preview-text">
                                         <strong>{button.title}</strong>
                                         <small>{button.description}</small>
@@ -266,6 +311,41 @@ function HomeCustomizer() {
                                         value={button.description}
                                         onChange={(e) => updateButton(button.id, 'description', e.target.value)}
                                     />
+                                </div>
+
+                                {/* Image Upload Section */}
+                                <div className="input-group">
+                                    <label>Immagine Personalizzata</label>
+                                    {button.imageUrl ? (
+                                        <div className="image-preview-container">
+                                            <img
+                                                src={button.imageUrl}
+                                                alt={button.title}
+                                                className="uploaded-image-preview"
+                                            />
+                                            <button
+                                                type="button"
+                                                className="btn-remove-image"
+                                                onClick={() => removeImage(button.id)}
+                                            >
+                                                🗑️ Rimuovi Immagine
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <label className="upload-image-btn">
+                                            {uploadingImage === button.id ? '⏳ Caricamento...' : '📸 Carica Immagine'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={(e) => handleImageUpload(button.id, e)}
+                                                disabled={uploadingImage === button.id}
+                                                hidden
+                                            />
+                                        </label>
+                                    )}
+                                    <small className="hint-text">
+                                        {button.imageUrl ? 'L\'immagine sostituisce l\'icona emoji' : 'Carica un\'immagine per sostituire l\'emoji'}
+                                    </small>
                                 </div>
 
                                 <div className="input-group">

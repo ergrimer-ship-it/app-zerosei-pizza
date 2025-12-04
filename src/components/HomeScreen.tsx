@@ -10,6 +10,7 @@ import './HomeScreen.css';
 interface HomeButton {
     id: string;
     icon: string;
+    imageUrl?: string;
     title: string;
     description: string;
     color: string;
@@ -122,6 +123,10 @@ function HomeScreen() {
             case 'fidelity':
                 navigate('/fidelity');
                 break;
+            case 'news':
+                // TODO: Navigate to news/promotions page
+                navigate('/menu'); // Temporary: redirect to menu
+                break;
             default:
                 break;
         }
@@ -163,7 +168,15 @@ function HomeScreen() {
                             }}
                             onClick={() => handleButtonClick(button.id)}
                         >
-                            <span className="cta-icon">{button.icon}</span>
+                            {button.imageUrl ? (
+                                <img
+                                    src={button.imageUrl}
+                                    alt={button.title}
+                                    className="cta-icon-image"
+                                />
+                            ) : (
+                                <span className="cta-icon">{button.icon}</span>
+                            )}
                             <h3>{button.title}</h3>
                             <p>{button.description}</p>
                         </button>
