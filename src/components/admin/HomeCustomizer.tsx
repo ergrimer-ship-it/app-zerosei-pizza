@@ -90,7 +90,22 @@ function HomeCustomizer() {
             const docRef = doc(db, 'config', 'home');
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                setConfig({ ...defaultConfig, ...docSnap.data() as HomeConfig });
+                const savedConfig = docSnap.data() as HomeConfig;
+
+                // Merge buttons: keep saved buttons and add new default buttons if they don't exist
+                const savedButtonIds = new Set(savedConfig.buttons?.map(b => b.id) || []);
+                const newButtons = defaultConfig.buttons.filter(b => !savedButtonIds.has(b.id));
+
+                const mergedButtons = [
+                    ...(savedConfig.buttons || []),
+                    ...newButtons
+                ];
+
+                setConfig({
+                    ...defaultConfig,
+                    ...savedConfig,
+                    buttons: mergedButtons
+                });
             }
         } catch (error) {
             console.error('Error loading home config:', error);

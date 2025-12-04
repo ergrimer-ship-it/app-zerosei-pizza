@@ -14,6 +14,12 @@ service firebase.storage {
       allow write: if true;
     }
     
+    // Allow upload of home button images
+    match /home-buttons/{imageId} {
+      allow read: if true;
+      allow write: if true; // Anyone can upload (temporary - should be authenticated admins only)
+    }
+    
     // Deny all other paths by default
     match /{allPaths=**} {
       allow read, write: if false;
