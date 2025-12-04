@@ -7,7 +7,10 @@ import ThemeCustomizer from './ThemeCustomizer';
 import HomeCustomizer from './HomeCustomizer';
 import './Settings.css';
 
+type SettingsTab = 'general' | 'home' | 'theme';
+
 function Settings() {
+    const [activeTab, setActiveTab] = useState<SettingsTab>('general');
     const [logoUrl, setLogoUrl] = useState('');
     const [logoSize, setLogoSize] = useState(60);
     const [uploading, setUploading] = useState(false);
@@ -52,6 +55,20 @@ function Settings() {
         setUploading(false);
     };
 
+    const saveSettings = async (url: string, size: number) => {
+        try {
+            await setDoc(doc(db, 'config', 'general'), {
+                logoUrl: url,
+                logoSize: size,
+                updatedAt: new Date()
+            });
+            alert('✅ Impostazioni salvate!');
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            alert('❌ Errore nel salvataggio');
+        }
+    };
+
     const handleSizeChange = async (newSize: number) => {
         setLogoSize(newSize);
         if (logoUrl) {
@@ -59,94 +76,96 @@ function Settings() {
         }
     };
 
-    const saveSettings = async (url: string, size: number) => {
-        try {
-            await setDoc(doc(db, 'config', 'general'), {
-                logoUrl: url,
-                logoSize: size,
-                updatedAt: new Date()
-            }, { merge: true });
-            alert('Impostazioni aggiornate con successo!');
-        } catch (error) {
-            console.error('Error saving settings:', error);
-            alert('Errore nel salvataggio delle impostazioni');
-        }
-    };
-
-    if (loading) return <div className="loading">Caricamento...</div>;
+    if (loading) {
+        return <div className="settings-container"><div className="loading">Caricamento...</div></div>;
+    }
 
     return (
         <div className="settings-container">
-            <h2>Impostazioni Generali</h2>
+            <h2 className="settings-title">⚙️ Impostazioni</h2>
 
-            <div className="setting-section">
-                <h3>Logo Applicazione</h3>
-                <p className="setting-description">
-                    Carica un logo da mostrare nell'intestazione del sito al posto del testo.
-                </p>
+            {/* Tabs Navigation */}
+            <div className="settings-tabs">
+                <button
+                    className={`settings-tab ${activeTab === 'general' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('general')}
+                >
+                    🏢 Generale
+                </button>
+                <button
+                    className={`settings-tab ${activeTab === 'home' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('home')}
+                >
+                    🏠 Pagina Home
+                </button>
+                <button
+                    className={`settings-tab ${activeTab === 'theme' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('theme')}
+                >
+                    🎨 Tema Globale
+                </button>
+            </div>
 
-                <div className="logo-upload-container">
-                    <div className="current-logo">
-                        {logoUrl ? (
-                            <img
-                                src={logoUrl}
-                                alt="Logo attuale"
-                                className="logo-preview"
-                                style={{ height: `${logoSize}px`, objectFit: 'contain' }}
-                            />
-                        ) : (
-                            <div className="logo-placeholder">Nessun logo</div>
-                        )}
-                    </div>
+            {/* Tab Content */}
+            <div className="settings-tab-content">
+                {activeTab === 'general' && (
+                    <div className="tab-panel">
+                        {/* Logo Upload Section */}
+                        <div className="settings-section">
+                            <h3>🖼️ Logo Pizzeria</h3>
+                            <div className="logo-upload-container">
+                                {logoUrl && (
+                                    <div className="logo-preview">
+                                        <img
+                                            src={logoUrl}
+                                            alt="Logo"
+                                            style={{ height: `${logoSize}px` }}
+                                        />
+                                    </div>
+                                )}
+                                <label className="upload-button">
+                                    {uploading ? '⏳ Caricamento...' : '📤 Carica Logo'}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleImageUpload}
+                                        disabled={uploading}
+                                        hidden
+                                    />
+                                </label>
+                            </div>
 
-                    <div className="upload-controls">
-                        <label className="upload-btn">
-                            {uploading ? 'Caricamento...' : 'Carica Nuovo Logo'}
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                disabled={uploading}
-                                hidden
-                            />
-                        </label>
-                    </div>
-                </div>
-
-                {logoUrl && (
-                    <div className="size-control">
-                        <label htmlFor="logoSize">
-                            Dimensione Logo: <strong>{logoSize}px</strong>
-                        </label>
-                        <input
-                            id="logoSize"
-                            type="range"
-                            min="30"
-                            max="100"
-                            step="5"
-                            value={logoSize}
-                            onChange={(e) => handleSizeChange(Number(e.target.value))}
-                            className="size-slider"
-                        />
-                        <div className="size-hints">
-                            <span>Piccolo (30px)</span>
-                            <span>Grande (100px)</span>
+                            {logoUrl && (
+                                <div className="logo-size-control">
+                                    <label>Dimensione Logo: {logoSize}px</label>
+                                    <input
+                                        type="range"
+                                        min="30"
+                                        max="150"
+                                        value={logoSize}
+                                        onChange={(e) => handleSizeChange(Number(e.target.value))}
+                                    />
+                                </div>
+                            )}
                         </div>
+
+                        {/* Cassa Cloud Settings */}
+                        <CassaCloudSettings />
+                    </div>
+                )}
+
+                {activeTab === 'home' && (
+                    <div className="tab-panel">
+                        <HomeCustomizer />
+                    </div>
+                )}
+
+                {activeTab === 'theme' && (
+                    <div className="tab-panel">
+                        <ThemeCustomizer />
                     </div>
                 )}
             </div>
-
-            <hr className="settings-divider" />
-
-            <HomeCustomizer />
-
-            <hr className="settings-divider" />
-
-            <ThemeCustomizer />
-
-            <hr className="settings-divider" />
-
-            <CassaCloudSettings />
         </div>
     );
 }

@@ -1,117 +1,214 @@
 .settings-container {
     padding: var(--spacing-lg);
-    max-width: 800px;
+    max-width: 1200px;
     margin: 0 auto;
 }
 
-.setting-section {
-    background: white;
-    padding: var(--spacing-xl);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-sm);
+.settings-title {
+    font-size: var(--font-size-3xl);
     margin-bottom: var(--spacing-xl);
+    color: var(--color-text);
 }
 
-.setting-description {
+/* Tabs Navigation */
+.settings-tabs {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xl);
+    border-bottom: 2px solid var(--color-border);
+}
+
+.settings-tab {
+    padding: var(--spacing-md) var(--spacing-xl);
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
-    margin-bottom: var(--spacing-lg);
+    transition: all var(--transition-fast);
+    position: relative;
+    bottom: -2px;
 }
 
-.logo-upload-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-xl);
-}
-
-.current-logo {
-    width: 150px;
-    height: 150px;
-    border: 2px dashed var(--color-border);
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
+.settings-tab:hover {
+    color: var(--color-primary);
     background: var(--color-bg-secondary);
 }
 
+.settings-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+    font-weight: var(--font-weight-semibold);
+}
+
+/* Tab Content */
+.settings-tab-content {
+    animation: fadeIn 0.3s ease-in;
+}
+
+.tab-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Settings Section */
+.settings-section {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.settings-section h3 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-text);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--color-bg-tertiary);
+}
+
+/* Logo Upload */
+.logo-upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
 .logo-preview {
-    width: 100%;
-    height: 100%;
+    padding: var(--spacing-lg);
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-md);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-preview img {
+    max-width: 100%;
     object-fit: contain;
 }
 
-.logo-placeholder {
-    color: var(--color-text-light);
-    font-size: var(--font-size-sm);
-}
-
-.upload-btn {
+.upload-button {
     display: inline-block;
-    padding: var(--spacing-md) var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-xl);
     background: var(--color-primary);
     color: white;
     border-radius: var(--radius-md);
     cursor: pointer;
-    font-weight: var(--font-weight-medium);
-    transition: background var(--transition-fast);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-base);
+    text-align: center;
 }
 
-.upload-btn:hover {
+.upload-button:hover {
     background: var(--color-primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
-.size-control {
-    margin-top: var(--spacing-xl);
-    padding-top: var(--spacing-lg);
-    border-top: 1px solid var(--color-border);
+/* Logo Size Control */
+.logo-size-control {
+    margin-top: var(--spacing-lg);
+    width: 100%;
+    max-width: 400px;
 }
 
-.size-control label {
+.logo-size-control label {
     display: block;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
     font-weight: var(--font-weight-medium);
+    color: var(--color-text);
 }
 
-.size-slider {
+.logo-size-control input[type="range"] {
     width: 100%;
     height: 8px;
-    border-radius: 4px;
-    background: var(--color-bg-secondary);
+    border-radius: var(--radius-full);
+    background: var(--color-bg-tertiary);
     outline: none;
-    appearance: none;
     -webkit-appearance: none;
-    margin: var(--spacing-md) 0;
 }
 
-.size-slider::-webkit-slider-thumb {
-    appearance: none;
+.logo-size-control input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
+    appearance: none;
     width: 20px;
     height: 20px;
     border-radius: 50%;
     background: var(--color-primary);
     cursor: pointer;
+    transition: all var(--transition-fast);
 }
 
-.size-slider::-moz-range-thumb {
+.logo-size-control input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 8px rgba(231, 76, 60, 0.1);
+}
+
+.logo-size-control input[type="range"]::-moz-range-thumb {
     width: 20px;
     height: 20px;
     border-radius: 50%;
     background: var(--color-primary);
     cursor: pointer;
     border: none;
+    transition: all var(--transition-fast);
 }
 
-.size-hints {
+.logo-size-control input[type="range"]::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 8px rgba(231, 76, 60, 0.1);
+}
+
+/* Loading */
+.loading {
     display: flex;
-    justify-content: space-between;
-    font-size: var(--font-size-sm);
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-3xl);
+    font-size: var(--font-size-lg);
     color: var(--color-text-secondary);
 }
 
-.settings-divider {
-    margin: var(--spacing-xl) 0;
-    border: none;
-    border-top: 2px solid var(--color-border);
+/* Responsive */
+@media (max-width: 768px) {
+    .settings-container {
+        padding: var(--spacing-md);
+    }
+
+    .settings-tabs {
+        flex-direction: column;
+        border-bottom: none;
+    }
+
+    .settings-tab {
+        border-bottom: 2px solid var(--color-border);
+        border-left: 3px solid transparent;
+        bottom: 0;
+    }
+
+    .settings-tab.active {
+        border-bottom-color: var(--color-border);
+        border-left-color: var(--color-primary);
+    }
+
+    .settings-section {
+        padding: var(--spacing-md);
+    }
 }
