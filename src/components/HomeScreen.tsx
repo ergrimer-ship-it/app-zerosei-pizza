@@ -18,15 +18,51 @@ interface HomeButton {
     order: number;
 }
 
+interface FeatureCard {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+}
+
 interface HomeConfig {
     heroTitle: string;
     heroSubtitle: string;
     buttons: HomeButton[];
+    featuresTitle?: string;
+    features?: FeatureCard[];
 }
 
 const defaultConfig: HomeConfig = {
     heroTitle: 'Benvenuto da ZeroSei 🍕',
     heroSubtitle: 'La migliore pizza napoletana d\'asporto della città',
+    featuresTitle: 'Perché scegliere ZeroSei?',
+    features: [
+        {
+            id: 'feature1',
+            icon: '🔥',
+            title: 'Forno a Legna',
+            description: 'Pizza cotta nel tradizionale forno a legna'
+        },
+        {
+            id: 'feature2',
+            icon: '🌾',
+            title: 'Ingredienti Freschi',
+            description: 'Solo ingredienti di prima qualità'
+        },
+        {
+            id: 'feature3',
+            icon: '⚡',
+            title: 'Servizio Veloce',
+            description: 'Pronta in 15-20 minuti'
+        },
+        {
+            id: 'feature4',
+            icon: '❤️',
+            title: 'Ricetta Napoletana',
+            description: 'Autentica tradizione partenopea'
+        }
+    ],
     buttons: [
         {
             id: 'menu',
@@ -185,28 +221,15 @@ function HomeScreen() {
 
             {/* Info Section */}
             <section className="info-section">
-                <h2>Perché scegliere ZeroSei?</h2>
+                <h2>{config.featuresTitle || 'Perché scegliere ZeroSei?'}</h2>
                 <div className="features-grid">
-                    <div className="feature">
-                        <span className="feature-icon">🔥</span>
-                        <h4>Forno a Legna</h4>
-                        <p>Pizza cotta nel tradizionale forno a legna</p>
-                    </div>
-                    <div className="feature">
-                        <span className="feature-icon">🌾</span>
-                        <h4>Ingredienti Freschi</h4>
-                        <p>Solo ingredienti di prima qualità</p>
-                    </div>
-                    <div className="feature">
-                        <span className="feature-icon">⚡</span>
-                        <h4>Servizio Veloce</h4>
-                        <p>Pronta in 15-20 minuti</p>
-                    </div>
-                    <div className="feature">
-                        <span className="feature-icon">❤️</span>
-                        <h4>Ricetta Napoletana</h4>
-                        <p>Autentica tradizione partenopea</p>
-                    </div>
+                    {(config.features || defaultConfig.features || []).map(feature => (
+                        <div key={feature.id} className="feature">
+                            <span className="feature-icon">{feature.icon}</span>
+                            <h4>{feature.title}</h4>
+                            <p>{feature.description}</p>
+                        </div>
+                    ))}
                 </div>
             </section>
 

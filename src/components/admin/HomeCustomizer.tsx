@@ -16,15 +16,51 @@ interface HomeButton {
     order: number;
 }
 
+interface FeatureCard {
+    id: string;
+    icon: string;
+    title: string;
+    description: string;
+}
+
 interface HomeConfig {
     heroTitle: string;
     heroSubtitle: string;
     buttons: HomeButton[];
+    featuresTitle?: string;
+    features?: FeatureCard[];
 }
 
 const defaultConfig: HomeConfig = {
     heroTitle: 'Benvenuto da ZeroSei 🍕',
     heroSubtitle: 'La migliore pizza napoletana d\'asporto della città',
+    featuresTitle: 'Perché scegliere ZeroSei?',
+    features: [
+        {
+            id: 'feature1',
+            icon: '🔥',
+            title: 'Forno a Legna',
+            description: 'Pizza cotta nel tradizionale forno a legna'
+        },
+        {
+            id: 'feature2',
+            icon: '🌾',
+            title: 'Ingredienti Freschi',
+            description: 'Solo ingredienti di prima qualità'
+        },
+        {
+            id: 'feature3',
+            icon: '⚡',
+            title: 'Servizio Veloce',
+            description: 'Pronta in 15-20 minuti'
+        },
+        {
+            id: 'feature4',
+            icon: '❤️',
+            title: 'Ricetta Napoletana',
+            description: 'Autentica tradizione partenopea'
+        }
+    ],
     buttons: [
         {
             id: 'menu',
@@ -131,6 +167,8 @@ function HomeCustomizer() {
             await setDoc(doc(db, 'config', 'home'), {
                 heroTitle: config.heroTitle,
                 heroSubtitle: config.heroSubtitle,
+                featuresTitle: config.featuresTitle,
+                features: config.features,
                 buttons: cleanedButtons,
                 updatedAt: new Date()
             });
@@ -163,6 +201,19 @@ function HomeCustomizer() {
 
     const updateHeroSubtitle = (value: string) => {
         setConfig(prev => ({ ...prev, heroSubtitle: value }));
+    };
+
+    const updateFeaturesTitle = (value: string) => {
+        setConfig(prev => ({ ...prev, featuresTitle: value }));
+    };
+
+    const updateFeature = (id: string, field: keyof FeatureCard, value: string) => {
+        setConfig(prev => ({
+            ...prev,
+            features: (prev.features || []).map(feature =>
+                feature.id === id ? { ...feature, [field]: value } : feature
+            )
+        }));
     };
 
     const updateButton = (id: string, field: keyof HomeButton, value: any) => {
@@ -425,6 +476,58 @@ function HomeCustomizer() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Features Section */}
+            <div className="customizer-section">
+                <h3>✨ Sezione "Perché scegliere ZeroSei"</h3>
+                <p className="section-hint">
+                    Personalizza il titolo e le 4 card che mostrano i punti di forza della pizzeria.
+                </p>
+
+                <div className="input-group">
+                    <label>Titolo Sezione</label>
+                    <input
+                        type="text"
+                        value={config.featuresTitle || ''}
+                        onChange={(e) => updateFeaturesTitle(e.target.value)}
+                        placeholder="Perché scegliere ZeroSei?"
+                    />
+                </div>
+
+                <div className="features-list">
+                    {(config.features || []).map((feature) => (
+                        <div key={feature.id} className="feature-card-edit">
+                            <div className="input-row">
+                                <div className="input-group small">
+                                    <label>Icona</label>
+                                    <input
+                                        type="text"
+                                        value={feature.icon}
+                                        onChange={(e) => updateFeature(feature.id, 'icon', e.target.value)}
+                                        maxLength={2}
+                                    />
+                                </div>
+                                <div className="input-group">
+                                    <label>Titolo</label>
+                                    <input
+                                        type="text"
+                                        value={feature.title}
+                                        onChange={(e) => updateFeature(feature.id, 'title', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="input-group">
+                                <label>Descrizione</label>
+                                <input
+                                    type="text"
+                                    value={feature.description}
+                                    onChange={(e) => updateFeature(feature.id, 'description', e.target.value)}
+                                />
                             </div>
                         </div>
                     ))}
