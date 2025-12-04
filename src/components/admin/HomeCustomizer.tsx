@@ -116,8 +116,22 @@ function HomeCustomizer() {
     const handleSave = async () => {
         setSaving(true);
         try {
+            // Clean up undefined values from buttons before saving
+            const cleanedButtons = config.buttons.map(button => {
+                const cleanButton: any = { ...button };
+                // Remove undefined fields
+                Object.keys(cleanButton).forEach(key => {
+                    if (cleanButton[key] === undefined) {
+                        delete cleanButton[key];
+                    }
+                });
+                return cleanButton;
+            });
+
             await setDoc(doc(db, 'config', 'home'), {
-                ...config,
+                heroTitle: config.heroTitle,
+                heroSubtitle: config.heroSubtitle,
+                buttons: cleanedButtons,
                 updatedAt: new Date()
             });
             alert('✅ Modifiche salvate con successo!');

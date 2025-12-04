@@ -124,8 +124,7 @@ function HomeScreen() {
                 navigate('/fidelity');
                 break;
             case 'news':
-                // TODO: Navigate to news/promotions page
-                navigate('/menu'); // Temporary: redirect to menu
+                navigate('/news');
                 break;
             default:
                 break;
