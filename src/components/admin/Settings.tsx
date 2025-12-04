@@ -20,6 +20,30 @@ function Settings() {
         loadSettings();
     }, []);
 
+    useEffect(() => {
+        if (logoUrl) {
+            updateAppIcons(logoUrl);
+        }
+    }, [logoUrl]);
+
+    const updateAppIcons = (url: string) => {
+        let favicon = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+        if (!favicon) {
+            favicon = document.createElement('link');
+            favicon.rel = 'icon';
+            document.head.appendChild(favicon);
+        }
+        favicon.href = url;
+
+        let appleTouchIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+        if (!appleTouchIcon) {
+            appleTouchIcon = document.createElement('link');
+            appleTouchIcon.rel = 'apple-touch-icon';
+            document.head.appendChild(appleTouchIcon);
+        }
+        appleTouchIcon.href = url;
+    };
+
     const loadSettings = async () => {
         setLoading(true);
         try {
@@ -45,6 +69,7 @@ function Settings() {
             await uploadBytes(storageRef, file);
             const url = await getDownloadURL(storageRef);
             setLogoUrl(url);
+            updateAppIcons(url);
 
             // Auto-save after upload
             await saveSettings(url, logoSize);
