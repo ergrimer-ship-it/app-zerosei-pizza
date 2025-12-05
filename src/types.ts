@@ -196,3 +196,18 @@ export interface AppSettings {
     cassaCloudApiKey?: string;
     cassaCloudApiUrl?: string;
 }
+
+// ============================================
+// COUPON TYPES
+// ============================================
+
+export interface GeneratedCoupon {
+    id: string;
+    userId: string;
+    offerId: string;
+    offerTitle: string;
+    code: string;
+    status: 'active' | 'redeemed';
+    createdAt: Date;
+    redeemedAt?: Date;
+}

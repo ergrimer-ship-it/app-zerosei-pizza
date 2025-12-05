@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getAllPromotions } from '../services/dbService';
 import type { NewsPromotion } from '../types';
 import './NewsOffersScreen.css';
 
 function NewsOffersScreen() {
+    const navigate = useNavigate();
     const [promotions, setPromotions] = useState<NewsPromotion[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -61,7 +63,11 @@ function NewsOffersScreen() {
             ) : (
                 <div className="news-grid">
                     {promotions.map(promotion => (
-                        <div key={promotion.id} className="news-card">
+                        <div
+                            key={promotion.id}
+                            className="news-card clickable"
+                            onClick={() => navigate(`/offer/${promotion.id}`)}
+                        >
                             {promotion.imageUrl ? (
                                 <img
                                     src={promotion.imageUrl}

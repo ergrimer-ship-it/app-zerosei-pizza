@@ -8,6 +8,7 @@ import ProductDetailScreen from './components/ProductDetailScreen';
 import CartScreen from './components/CartScreen';
 import ProfileScreen from './components/ProfileScreen';
 import NewsOffersScreen from './components/NewsOffersScreen';
+import OfferDetailScreen from './components/OfferDetailScreen';
 import FidelityCardScreen from './components/FidelityCardScreen';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
@@ -89,6 +90,7 @@ function App() {
                             <Route path="/cart" element={<CartScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
                             <Route path="/profile" element={<ProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />} />
                             <Route path="/news" element={<NewsOffersScreen />} />
+                            <Route path="/offer/:id" element={<OfferDetailScreen userProfile={userProfile} />} />
                             <Route path="/fidelity" element={<FidelityCardScreen userProfile={userProfile} />} />
                             <Route path="/debug" element={<DebugProducts />} />
                         </Routes>
