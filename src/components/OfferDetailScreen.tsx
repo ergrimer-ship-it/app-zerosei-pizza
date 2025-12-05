@@ -92,6 +92,27 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
         }
     };
 
+    const checkDailyGlobalLimit = async (userId: string): Promise<boolean> => {
+        try {
+            // Inizio giornata odierna (00:00)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const couponsRef = collection(db, 'GeneratedCoupons');
+            const q = query(
+                couponsRef,
+                where('userId', '==', userId),
+                where('createdAt', '>=', today)
+            );
+
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.size > 0;
+        } catch (err) {
+            console.error('Error checking daily global limit:', err);
+            return false;
+        }
+    };
+
     const generateRandomCode = (): string => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
@@ -113,7 +134,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
         setError(null);
 
         try {
-            // Verifica se offerta già attivata
+            // Step 1: Verifica se QUESTA offerta specifica è già stata attivata
             const alreadyActivated = await checkOfferAlreadyActivated(userProfile.id, offer.id);
 
             if (alreadyActivated) {
@@ -128,7 +149,16 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                 return;
             }
 
-            // Genera nuovo codice
+            // Step 2: Verifica limite giornaliero globale (qualsiasi offerta oggi)
+            const hasActivatedToday = await checkDailyGlobalLimit(userProfile.id);
+
+            if (hasActivatedToday) {
+                setError('🚫 Puoi attivare solo un\'offerta al giorno. Torna domani!');
+                setActivating(false);
+                return;
+            }
+
+            // Step 3: Genera nuovo codice
             const newCode = generateRandomCode();
 
             // Salva in Firestore
