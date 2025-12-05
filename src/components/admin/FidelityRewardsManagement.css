@@ -1,0 +1,223 @@
+.rewards-management {
+    padding: var(--spacing-lg);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.rewards-header {
+    margin-bottom: var(--spacing-xl);
+}
+
+.rewards-header h2 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text);
+}
+
+.rewards-description {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-base);
+}
+
+/* Form */
+.rewards-form {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.rewards-form h3 {
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-text);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group.full-width {
+    grid-column: 1 / -1;
+}
+
+.form-group label {
+    margin-bottom: var(--spacing-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text);
+}
+
+.form-group input {
+    padding: var(--spacing-md);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    transition: border-color var(--transition-fast);
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+/* Lista Premi */
+.rewards-list {
+    background: white;
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+}
+
+.rewards-list h3 {
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-text);
+}
+
+.rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.reward-card {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    border: 2px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    transition: all var(--transition-base);
+}
+
+.reward-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.reward-card.inactive {
+    opacity: 0.6;
+    background: var(--color-bg-tertiary);
+}
+
+.reward-icon-large {
+    font-size: 4rem;
+    text-align: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.reward-content {
+    flex: 1;
+}
+
+.reward-content h4 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text);
+}
+
+.reward-desc {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.reward-points {
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    font-size: var(--font-size-base);
+    margin-bottom: var(--spacing-sm);
+}
+
+.reward-status {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-medium);
+}
+
+.reward-status.active {
+    background: #D4EDDA;
+    color: #155724;
+}
+
+.reward-status.inactive {
+    background: #F8D7DA;
+    color: #721C24;
+}
+
+.reward-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border);
+}
+
+.btn-icon {
+    padding: var(--spacing-sm);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: var(--font-size-base);
+}
+
+.btn-icon:hover:not(:disabled) {
+    background: var(--color-primary);
+    color: white;
+    transform: scale(1.1);
+}
+
+.btn-icon:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.btn-icon.btn-danger:hover {
+    background: var(--color-error);
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-3xl);
+    color: var(--color-text-secondary);
+}
+
+.loading {
+    text-align: center;
+    padding: var(--spacing-3xl);
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .rewards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reward-actions {
+        justify-content: center;
+    }
+}

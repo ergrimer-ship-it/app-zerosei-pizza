@@ -7,6 +7,7 @@ import OrderManagement from './admin/OrderManagement';
 import Settings from './admin/Settings';
 import ModificationManagement from './admin/ModificationManagement';
 import CustomerManagement from './admin/CustomerManagement';
+import FidelityRewardsManagement from './admin/FidelityRewardsManagement';
 import { useTheme } from '../hooks/useTheme';
 import './AdminDashboard.css';
 
@@ -36,6 +37,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 return <CategoryManagement />;
             case 'promotions':
                 return <PromotionManagement />;
+            case 'fidelity':
+                return <FidelityRewardsManagement />;
             case 'settings':
                 return <Settings />;
             case 'customers':
@@ -81,6 +84,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         onClick={() => setActiveTab('promotions')}
                     >
                         {theme?.iconPromotions || '📢'} Promozioni
+                    </button>
+                    <button
+                        className={`nav-item ${activeTab === 'fidelity' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('fidelity')}
+                    >
+                        🎁 Premi Fidelity
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}

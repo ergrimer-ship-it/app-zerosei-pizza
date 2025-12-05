@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { UserProfile, LoyaltyCard } from '../types';
+import { UserProfile, LoyaltyCard, LoyaltyReward } from '../types';
 import { getLoyaltyPoints } from '../services/cassaCloudService';
+import { db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './FidelityCardScreen.css';
 
@@ -11,7 +13,13 @@ interface FidelityCardScreenProps {
 function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
     const navigate = useNavigate();
     const [loyaltyData, setLoyaltyData] = useState<LoyaltyCard | null>(null);
+    const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadingRewards, setLoadingRewards] = useState(true);
+
+    useEffect(() => {
+        loadRewards();
+    }, []);
 
     useEffect(() => {
         if (userProfile) {
@@ -60,6 +68,27 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
         }
     }, [userProfile]);
 
+    const loadRewards = async () => {
+        setLoadingRewards(true);
+        try {
+            const docRef = doc(db, 'config', 'rewards');
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                // Filtra solo premi attivi
+                const activeRewards = (data.rewards || []).filter((r: LoyaltyReward) => r.available);
+                setRewards(activeRewards);
+            } else {
+                setRewards([]);
+            }
+        } catch (error) {
+            console.error('Error loading rewards:', error);
+            setRewards([]);
+        }
+        setLoadingRewards(false);
+    };
+
     if (!userProfile) {
         return (
             <div className="fidelity-screen fade-in">
@@ -102,40 +131,26 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
 
             <div className="rewards-section">
                 <h2>Premi Disponibili</h2>
-                <div className="rewards-list">
-                    <div className="reward-item">
-                        <div className="reward-icon">🥤</div>
-                        <div className="reward-info">
-                            <h3>Bibita in omaggio</h3>
-                            <p>100 Punti</p>
-                        </div>
-                        <button className="btn btn-sm btn-outline" disabled={!loyaltyData || loyaltyData.points < 100}>
-                            Riscatta
-                        </button>
+                {loadingRewards ? (
+                    <div className="loading-rewards">Caricamento premi...</div>
+                ) : rewards.length === 0 ? (
+                    <div className="no-rewards">
+                        <p>Nessun premio disponibile al momento.</p>
                     </div>
-
-                    <div className="reward-item">
-                        <div className="reward-icon">🍕</div>
-                        <div className="reward-info">
-                            <h3>Pizza Margherita</h3>
-                            <p>200 Punti</p>
-                        </div>
-                        <button className="btn btn-sm btn-outline" disabled={!loyaltyData || loyaltyData.points < 200}>
-                            Riscatta
-                        </button>
+                ) : (
+                    <div className="rewards-list">
+                        {rewards.map((reward) => (
+                            <div key={reward.id} className="reward-item">
+                                <div className="reward-icon">{reward.imageUrl || '🎁'}</div>
+                                <div className="reward-info">
+                                    <h3>{reward.name}</h3>
+                                    <p>{reward.description}</p>
+                                    <p className="reward-points-required">{reward.pointsRequired} Punti</p>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-
-                    <div className="reward-item">
-                        <div className="reward-icon">🍰</div>
-                        <div className="reward-info">
-                            <h3>Dolce a scelta</h3>
-                            <p>150 Punti</p>
-                        </div>
-                        <button className="btn btn-sm btn-outline" disabled={!loyaltyData || loyaltyData.points < 150}>
-                            Riscatta
-                        </button>
-                    </div>
-                </div>
+                )}
             </div>
 
             <div className="info-box mt-xl">
