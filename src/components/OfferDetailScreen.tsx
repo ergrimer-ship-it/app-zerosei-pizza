@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import type { NewsPromotion, UserProfile } from '../types';
 import './OfferDetailScreen.css';
 
@@ -16,11 +16,12 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const [loading, setLoading] = useState(true);
     const [activating, setActivating] = useState(false);
     const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+    const [existingCoupon, setExistingCoupon] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         loadOffer();
-    }, [id]);
+    }, [id, userProfile]);
 
     const loadOffer = async () => {
         if (!id) return;
@@ -31,7 +32,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                setOffer({
+                const loadedOffer = {
                     id: docSnap.id,
                     title: data.title,
                     description: data.description,
@@ -42,7 +43,19 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     showAsPopup: data.showAsPopup,
                     createdAt: data.createdAt?.toDate() || new Date(),
                     updatedAt: data.updatedAt?.toDate() || new Date(),
-                });
+                };
+                setOffer(loadedOffer);
+
+                // Verifica se utente ha già un coupon per questa offerta
+                if (userProfile) {
+                    const couponFound = await checkOfferAlreadyActivated(userProfile.id, docSnap.id);
+                    if (couponFound) {
+                        setExistingCoupon(couponFound);
+                        if (couponFound.status === 'active') {
+                            setGeneratedCode(couponFound.code);
+                        }
+                    }
+                }
             } else {
                 setError('Offerta non trovata');
             }
@@ -53,6 +66,32 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
         setLoading(false);
     };
 
+    const checkOfferAlreadyActivated = async (userId: string, offerId: string): Promise<any | null> => {
+        try {
+            const couponsRef = collection(db, 'GeneratedCoupons');
+            const q = query(
+                couponsRef,
+                where('userId', '==', userId),
+                where('offerId', '==', offerId)
+            );
+
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.size > 0) {
+                const couponData = querySnapshot.docs[0].data();
+                return {
+                    ...couponData,
+                    id: querySnapshot.docs[0].id
+                };
+            }
+
+            return null;
+        } catch (err) {
+            console.error('Error checking offer activation:', err);
+            return null;
+        }
+    };
+
     const generateRandomCode = (): string => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         let code = '';
@@ -60,29 +99,6 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
             code += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return code;
-    };
-
-    const checkDailyLimit = async (): Promise<boolean> => {
-        if (!userProfile) return false;
-
-        // Inizio giornata odierna (00:00)
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        try {
-            const couponsRef = collection(db, 'GeneratedCoupons');
-            const q = query(
-                couponsRef,
-                where('userId', '==', userProfile.id),
-                where('createdAt', '>=', Timestamp.fromDate(today))
-            );
-
-            const querySnapshot = await getDocs(q);
-            return querySnapshot.size > 0;
-        } catch (err) {
-            console.error('Error checking daily limit:', err);
-            return false;
-        }
     };
 
     const handleActivateOffer = async () => {
@@ -97,19 +113,25 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
         setError(null);
 
         try {
-            // Step 1: Verifica limite giornaliero
-            const hasActivatedToday = await checkDailyLimit();
+            // Verifica se offerta già attivata
+            const alreadyActivated = await checkOfferAlreadyActivated(userProfile.id, offer.id);
 
-            if (hasActivatedToday) {
-                setError('🚫 Puoi attivare solo un\'offerta al giorno. Torna domani!');
+            if (alreadyActivated) {
+                if (alreadyActivated.status === 'active') {
+                    setGeneratedCode(alreadyActivated.code);
+                    setExistingCoupon(alreadyActivated);
+                } else {
+                    setError('Hai già utilizzato questa offerta.');
+                    setExistingCoupon(alreadyActivated);
+                }
                 setActivating(false);
                 return;
             }
 
-            // Step 2: Genera codice
+            // Genera nuovo codice
             const newCode = generateRandomCode();
 
-            // Step 3: Salva in Firestore
+            // Salva in Firestore
             const couponData = {
                 userId: userProfile.id,
                 offerId: offer.id,
@@ -121,8 +143,9 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             await addDoc(collection(db, 'GeneratedCoupons'), couponData);
 
-            // Step 4: Mostra codice
+            // Mostra codice
             setGeneratedCode(newCode);
+            setExistingCoupon({ ...couponData, code: newCode });
         } catch (err) {
             console.error('Error activating offer:', err);
             setError('Errore nell\'attivazione dell\'offerta. Riprova.');
@@ -206,7 +229,32 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
                     <p className="offer-description">{offer.description}</p>
 
-                    {!generatedCode && isValid && (
+                    {/* Offerta già utilizzata */}
+                    {existingCoupon && existingCoupon.status === 'redeemed' && (
+                        <div className="alert alert-warning">
+                            <strong>✓ Offerta già utilizzata</strong>
+                            <p>Hai già riscattato questa offerta. Non puoi riattivarla.</p>
+                        </div>
+                    )}
+
+                    {/* Codice attivo (esistente o appena generato) */}
+                    {generatedCode && (!existingCoupon || existingCoupon.status === 'active') && (
+                        <div className="coupon-generated">
+                            <div className="coupon-box">
+                                <h2>🎉 Offerta Attivata!</h2>
+                                <div className="coupon-code">
+                                    <span className="code-label">Il tuo codice è:</span>
+                                    <span className="code-value">{generatedCode}</span>
+                                </div>
+                                <p className="coupon-instructions">
+                                    📱 <strong>Mostra questo codice in cassa</strong> per ricevere lo sconto
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pulsante attivazione - solo se non già attivata e valida */}
+                    {!existingCoupon && isValid && (
                         <div className="activation-section">
                             {error && (
                                 <div className="alert alert-error">
@@ -225,21 +273,6 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                             <p className="help-text">
                                 Attiva l'offerta per ricevere il tuo codice sconto personale
                             </p>
-                        </div>
-                    )}
-
-                    {generatedCode && (
-                        <div className="coupon-generated">
-                            <div className="coupon-box">
-                                <h2>🎉 Offerta Attivata!</h2>
-                                <div className="coupon-code">
-                                    <span className="code-label">Il tuo codice è:</span>
-                                    <span className="code-value">{generatedCode}</span>
-                                </div>
-                                <p className="coupon-instructions">
-                                    📱 <strong>Mostra questo codice in cassa</strong> per ricevere lo sconto
-                                </p>
-                            </div>
                         </div>
                     )}
 
