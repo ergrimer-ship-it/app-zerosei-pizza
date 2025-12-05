@@ -51,6 +51,10 @@ interface ThemeConfig {
     iconPromotions: string;
     iconCustomers: string;
     iconSettings: string;
+
+    // Mobile Status Bar
+    statusBarColor?: string;
+    statusBarStyle?: string;
 }
 
 const defaultTheme: ThemeConfig = {
@@ -96,6 +100,9 @@ const defaultTheme: ThemeConfig = {
     iconPromotions: '📢',
     iconCustomers: '👥',
     iconSettings: '⚙️',
+
+    statusBarColor: '#000000',
+    statusBarStyle: 'black',
 };
 
 function ThemeCustomizer() {
@@ -514,6 +521,40 @@ function ThemeCustomizer() {
                                         className="color-text-input"
                                     />
                                 </div>
+                            </div>
+                        </div>
+
+                        <h3>📱 Status Bar Mobile</h3>
+                        <div className="color-grid">
+                            <div className="color-input-group">
+                                <label>Colore Status Bar</label>
+                                <div className="color-input-wrapper">
+                                    <input
+                                        type="color"
+                                        value={theme.statusBarColor || '#000000'}
+                                        onChange={(e) => updateTheme('statusBarColor', e.target.value)}
+                                    />
+                                    <input
+                                        type="text"
+                                        value={theme.statusBarColor || '#000000'}
+                                        onChange={(e) => updateTheme('statusBarColor', e.target.value)}
+                                        className="color-text-input"
+                                    />
+                                </div>
+                                <p className="hint">💡 Colore della barra superiore del telefono</p>
+                            </div>
+                            <div className="input-group">
+                                <label>Stile Status Bar iOS</label>
+                                <select
+                                    value={theme.statusBarStyle || 'black'}
+                                    onChange={(e) => updateTheme('statusBarStyle', e.target.value)}
+                                    className="select-input"
+                                >
+                                    <option value="default">Default (bianco)</option>
+                                    <option value="black">Black (nero)</option>
+                                    <option value="black-translucent">Black Translucent</option>
+                                </select>
+                                <p className="hint">💡 Stile per iPhone/iPad</p>
                             </div>
                         </div>
                     </div>
