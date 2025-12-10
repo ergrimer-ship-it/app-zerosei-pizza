@@ -130,7 +130,8 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                 email: userProfile.email,
                 firstName: userProfile.firstName,
                 lastName: userProfile.lastName,
-                phone: userProfile.phone
+                phone: userProfile.phone,
+                cassaCloudId: userProfile.cassaCloudId // Usa ID esistente se disponibile
             });
 
             if (result.success && result.points !== undefined) {

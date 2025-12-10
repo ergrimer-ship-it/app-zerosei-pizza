@@ -12,6 +12,7 @@ export const syncFidelityPoints = async (userData: {
     firstName: string;
     lastName: string;
     phone?: string;
+    cassaCloudId?: string;
 }) => {
     try {
         const syncFunction = httpsCallable(functions, 'syncFidelityPoints');

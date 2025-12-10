@@ -159,7 +159,7 @@ exports.searchCustomer = functions.https.onCall(async (data, context) => {
  */
 exports.syncFidelityPoints = functions.https.onCall(async (data, context) => {
     try {
-        const { email, firstName, lastName, phone } = data;
+        const { email, firstName, lastName, phone, cassaCloudId } = data;
 
         if (!email || !firstName || !lastName) {
             throw new functions.https.HttpsError('invalid-argument', 'Email, firstName e lastName sono obbligatori');
@@ -186,200 +186,165 @@ exports.syncFidelityPoints = functions.https.onCall(async (data, context) => {
 
         console.log('[syncFidelityPoints] Token ottenuto');
 
-        // Step 2: Cerca cliente per email
-        let customerId = null;
-        let customerFound = false;
-
-        // Usa filtro email se supportato
-        const searchUrl = `${CASSANOVA_API_URL}/customers?filter=email==${encodeURIComponent(email)}`;
-        const searchResponse = await fetch(searchUrl, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-                'X-Version': API_VERSION
-            }
-        });
-
-        if (searchResponse.ok) {
-            const searchData = await searchResponse.json();
-            const customers = searchData.customers || (Array.isArray(searchData) ? searchData : []);
-
-            if (customers.length > 0) {
-                customerId = customers[0].id;
-                customerFound = true;
-                console.log(`[syncFidelityPoints] Cliente trovato: ${customerId}`);
-            }
+        customerId = customers[0].id;
+        customerFound = true;
+        console.log(`[syncFidelityPoints] Cliente trovato: ${customerId}`);
+    }
         }
 
         // Step 2b: Se non trovato, cerca per nome e cognome
         if (!customerFound) {
-            console.log('[syncFidelityPoints] Cliente non trovato per email, cerco per nome');
-            const nameSearchUrl = `${CASSANOVA_API_URL}/customers?filter=firstName==${encodeURIComponent(firstName)};lastName==${encodeURIComponent(lastName)}`;
-            const nameSearchResponse = await fetch(nameSearchUrl, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'X-Version': API_VERSION
-                }
-            });
+    console.log('[syncFidelityPoints] Cliente non trovato per email, cerco per nome');
+    const nameSearchUrl = `${CASSANOVA_API_URL}/customers?filter=firstName==${encodeURIComponent(firstName)};lastName==${encodeURIComponent(lastName)}`;
+    const nameSearchResponse = await fetch(nameSearchUrl, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'X-Version': API_VERSION
+        }
+    });
 
-            if (nameSearchResponse.ok) {
-                const nameSearchData = await nameSearchResponse.json();
-                const nameCustomers = nameSearchData.customers || (Array.isArray(nameSearchData) ? nameSearchData : []);
+    if (nameSearchResponse.ok) {
+        const nameSearchData = await nameSearchResponse.json();
+        const nameCustomers = nameSearchData.customers || (Array.isArray(nameSearchData) ? nameSearchData : []);
 
-                if (nameCustomers.length === 1) {
-                    customerId = nameCustomers[0].id;
+        if (nameCustomers.length === 1) {
+            customerId = nameCustomers[0].id;
+            customerFound = true;
+            console.log(`[syncFidelityPoints] Cliente trovato per nome: ${customerId}`);
+        } else if (nameCustomers.length > 1) {
+            // Multipli risultati - disambigua con telefono se fornito
+            if (phone) {
+                const phoneMatch = nameCustomers.find(c => c.phoneNumber === phone);
+                if (phoneMatch) {
+                    customerId = phoneMatch.id;
                     customerFound = true;
-                    console.log(`[syncFidelityPoints] Cliente trovato per nome: ${customerId}`);
-                } else if (nameCustomers.length > 1) {
-                    // Multipli risultati - disambigua con telefono se fornito
-                    if (phone) {
-                        const phoneMatch = nameCustomers.find(c => c.phoneNumber === phone);
-                        if (phoneMatch) {
-                            customerId = phoneMatch.id;
-                            customerFound = true;
-                            console.log(`[syncFidelityPoints] Cliente disambiguato con telefono: ${customerId}`);
-                        }
-                    }
-
-                    if (!customerFound) {
-                        return {
-                            success: false,
-                            errorCode: 'MULTIPLE_CUSTOMERS',
-                            message: 'Trovati multipli clienti con stesso nome',
-                            customers: nameCustomers.slice(0, 5).map(c => ({
-                                id: c.id,
-                                firstName: c.firstName,
-                                lastName: c.lastName,
-                                email: c.email,
-                                phone: c.phoneNumber
-                            }))
-                        };
-                    }
+                    console.log(`[syncFidelityPoints] Cliente disambiguato con telefono: ${customerId}`);
                 }
             }
+
+            if (!customerFound) {
+                return {
+                    success: false,
+                    errorCode: 'MULTIPLE_CUSTOMERS',
+                    message: 'Trovati multipli clienti con stesso nome',
+                    customers: nameCustomers.slice(0, 5).map(c => ({
+                        id: c.id,
+                        firstName: c.firstName,
+                        lastName: c.lastName,
+                        email: c.email,
+                        phone: c.phoneNumber
+                    }))
+                };
+            }
         }
+    }
+}
 
-        // Step 3: Se ancora non trovato, crea nuovo cliente
-        if (!customerFound) {
-            console.log('[syncFidelityPoints] Cliente non trovato, creo nuovo');
-            const createPayload = {
-                firstName,
-                lastName,
-                email,
-                ...(phone && { phoneNumber: phone })
-            };
+// Step 3: Se ancora non trovato, crea nuovo cliente
+if (!customerFound) {
+    console.log('[syncFidelityPoints] Cliente non trovato, creo nuovo');
+    const createPayload = {
+        firstName,
+        lastName,
+        email,
+        ...(phone && { phoneNumber: phone })
+    };
 
-            const createResponse = await fetch(`${CASSANOVA_API_URL}/customers`, {
-                method: 'POST',
+    const createResponse = await fetch(`${CASSANOVA_API_URL}/customers`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'X-Version': API_VERSION
+        },
+        body: JSON.stringify(createPayload)
+    });
+
+    if (!createResponse.ok) {
+        const errorText = await createResponse.text();
+        console.error('Create customer error:', createResponse.status, errorText);
+
+        // Verifica se è errore "already exists"
+        if (errorText.includes('already exists') || createResponse.status === 409) {
+            // Ritenta ricerca
+            console.log('[syncFidelityPoints] Cliente già esiste, ritento ricerca');
+            const retrySearchResponse = await fetch(`${CASSANOVA_API_URL}/customers?filter=email==${encodeURIComponent(email)}`, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                     'X-Version': API_VERSION
-                },
-                body: JSON.stringify(createPayload)
+                }
             });
 
-            if (!createResponse.ok) {
-                const errorText = await createResponse.text();
-                console.error('Create customer error:', createResponse.status, errorText);
-
-                // Verifica se è errore "already exists"
-                if (errorText.includes('already exists') || createResponse.status === 409) {
-                    // Ritenta ricerca
-                    console.log('[syncFidelityPoints] Cliente già esiste, ritento ricerca');
-                    const retrySearchResponse = await fetch(`${CASSANOVA_API_URL}/customers?filter=email==${encodeURIComponent(email)}`, {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json',
-                            'X-Version': API_VERSION
-                        }
-                    });
-
-                    if (retrySearchResponse.ok) {
-                        const retryData = await retrySearchResponse.json();
-                        const retryCustomers = retryData.customers || (Array.isArray(retryData) ? retryData : []);
-                        if (retryCustomers.length > 0) {
-                            customerId = retryCustomers[0].id;
-                        }
-                    }
+            if (retrySearchResponse.ok) {
+                const retryData = await retrySearchResponse.json();
+                const retryCustomers = retryData.customers || (Array.isArray(retryData) ? retryData : []);
+                if (retryCustomers.length > 0) {
+                    customerId = retryCustomers[0].id;
                 }
-
-                if (!customerId) {
-                    throw new functions.https.HttpsError('internal', 'Impossibile creare o trovare cliente');
-                }
-            } else {
-                const createData = await createResponse.json();
-                customerId = createData.customer?.id || createData.id;
-                console.log(`[syncFidelityPoints] Nuovo cliente creato: ${customerId}`);
             }
         }
 
-        // Step 4: Recupera circuito fidelity
-        console.log('[syncFidelityPoints] Cerco circuito fidelity "FIDELITY CARD ZERO SEI"');
-        const circuitsResponse = await fetch(`${CASSANOVA_API_URL}/fidelitycircuit`, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-                'X-Version': API_VERSION
-            }
-        });
-
-        let programId = null;
-        if (circuitsResponse.ok) {
-            const circuitsData = await circuitsResponse.json();
-            const circuits = circuitsData.fidelityCircuit || (Array.isArray(circuitsData) ? circuitsData : []);
-            const targetCircuit = circuits.find(c => c.name === 'FIDELITY CARD ZERO SEI');
-
-            if (targetCircuit) {
-                programId = targetCircuit.id;
-                console.log(`[syncFidelityPoints] Circuito trovato: ${programId}`);
-            } else {
-                console.warn('[syncFidelityPoints] Circuito "FIDELITY CARD ZERO SEI" non trovato');
-            }
+        if (!customerId) {
         }
+    });
 
-        // Step 5: Recupera punti usando transazioni
-        let points = 0;
-        const limit = 1000;
-        const transactionsUrl = programId
-            ? `${CASSANOVA_API_URL}/fidelitypointstransactions?idCustomer=${customerId}&idsFidelityPointsPrograms=${programId}&start=0&limit=${limit}`
-            : `${CASSANOVA_API_URL}/fidelitypointstransactions?idCustomer=${customerId}&start=0&limit=${limit}`;
+    let programId = null;
+    if (circuitsResponse.ok) {
+        const circuitsData = await circuitsResponse.json();
+        const circuits = circuitsData.fidelityCircuit || (Array.isArray(circuitsData) ? circuitsData : []);
+        const targetCircuit = circuits.find(c => c.name === 'FIDELITY CARD ZERO SEI');
 
-        console.log(`[syncFidelityPoints] Recupero punti: ${transactionsUrl}`);
-
-        const transactionsResponse = await fetch(transactionsUrl, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json',
-                'X-Version': API_VERSION
-            }
-        });
-
-        if (transactionsResponse.ok) {
-            const transactionsData = await transactionsResponse.json();
-            const transactions = transactionsData.fidelityPointsTransaction || [];
-
-            points = transactions.reduce((total, transaction) => {
-                return total + (transaction.amount || 0);
-            }, 0);
-
-            console.log(`[syncFidelityPoints] Punti calcolati: ${points} (da ${transactions.length} transazioni)`);
+        if (targetCircuit) {
+            programId = targetCircuit.id;
+            console.log(`[syncFidelityPoints] Circuito trovato: ${programId}`);
         } else {
-            console.warn('[syncFidelityPoints] Errore recupero punti, uso 0 come default');
+            console.warn('[syncFidelityPoints] Circuito "FIDELITY CARD ZERO SEI" non trovato');
         }
-
-        // Step 6: Ritorna risultato
-        return {
-            success: true,
-            customerId,
-            points,
-            programId,
-            lastUpdated: new Date().toISOString()
-        };
-
-    } catch (error) {
-        console.error('[syncFidelityPoints] Errore:', error);
-        throw new functions.https.HttpsError('internal', error.message);
     }
+
+    // Step 5: Recupera punti usando transazioni
+    let points = 0;
+    const limit = 1000;
+    const transactionsUrl = programId
+        ? `${CASSANOVA_API_URL}/fidelitypointstransactions?idCustomer=${customerId}&idsFidelityPointsPrograms=${programId}&start=0&limit=${limit}`
+        : `${CASSANOVA_API_URL}/fidelitypointstransactions?idCustomer=${customerId}&start=0&limit=${limit}`;
+
+    console.log(`[syncFidelityPoints] Recupero punti: ${transactionsUrl}`);
+
+    const transactionsResponse = await fetch(transactionsUrl, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            'X-Version': API_VERSION
+        }
+    });
+
+    if (transactionsResponse.ok) {
+        const transactionsData = await transactionsResponse.json();
+        const transactions = transactionsData.fidelityPointsTransaction || [];
+
+        points = transactions.reduce((total, transaction) => {
+            return total + (transaction.amount || 0);
+        }, 0);
+
+        console.log(`[syncFidelityPoints] Punti calcolati: ${points} (da ${transactions.length} transazioni)`);
+    } else {
+        console.warn('[syncFidelityPoints] Errore recupero punti, uso 0 come default');
+    }
+
+    // Step 6: Ritorna risultato
+    return {
+        success: true,
+        customerId,
+        points,
+        programId,
+        lastUpdated: new Date().toISOString()
+    };
+
+} catch (error) {
+    console.error('[syncFidelityPoints] Errore:', error);
+    throw new functions.https.HttpsError('internal', error.message);
+}
 });
