@@ -335,7 +335,7 @@ exports.syncFidelityPoints = functions.https.onCall(async (data, context) => {
                 programId = targetCircuit.id;
                 console.log(`[syncFidelityPoints] Circuito trovato: ${programId}`);
             } else {
-                console.warn('[syncFidelityPoints] Circuito "Fidelity Card ZeroSei 24/25" non trovato');
+                console.warn('[syncFidelityPoints] Circuito "FIDELITY CARD ZERO SEI" non trovato');
             }
         }
 
