@@ -39,6 +39,7 @@ export interface UserProfile {
     phone: string;
     email: string;
     loyaltyPoints?: number;
+    cassaCloudId?: string; // ID cliente in Cassa in Cloud (usato da FidelityCardScreen)
     lastAccess?: Date;
     createdAt: Date;
     updatedAt: Date;
