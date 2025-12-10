@@ -18,10 +18,22 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const [generatedCode, setGeneratedCode] = useState<string | null>(null);
     const [existingCoupon, setExistingCoupon] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
+    const [dailyLimitReached, setDailyLimitReached] = useState(false);
 
     useEffect(() => {
         loadOffer();
     }, [id, userProfile]);
+
+    // Controllo preventivo del limite giornaliero
+    useEffect(() => {
+        const checkDailyLimit = async () => {
+            if (userProfile) {
+                const limitReached = await checkDailyGlobalLimit(userProfile.id);
+                setDailyLimitReached(limitReached);
+            }
+        };
+        checkDailyLimit();
+    }, [userProfile]);
 
     const loadOffer = async () => {
         if (!id) return;
@@ -286,7 +298,14 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     {/* Pulsante attivazione - solo se non già attivata e valida */}
                     {!existingCoupon && isValid && (
                         <div className="activation-section">
-                            {error && (
+                            {dailyLimitReached && (
+                                <div className="alert alert-error">
+                                    🚫 <strong>Limite raggiunto!</strong><br />
+                                    Hai già attivato un'offerta oggi. Torna domani per attivarne un'altra!
+                                </div>
+                            )}
+
+                            {error && !dailyLimitReached && (
                                 <div className="alert alert-error">
                                     {error}
                                 </div>
@@ -295,14 +314,16 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                             <button
                                 className="btn btn-primary btn-large"
                                 onClick={handleActivateOffer}
-                                disabled={activating}
+                                disabled={activating || dailyLimitReached}
                             >
                                 {activating ? 'Attivazione in corso...' : '🎫 ATTIVA QUESTA OFFERTA'}
                             </button>
 
-                            <p className="help-text">
-                                Attiva l'offerta per ricevere il tuo codice sconto personale
-                            </p>
+                            {!dailyLimitReached && (
+                                <p className="help-text">
+                                    Attiva l'offerta per ricevere il tuo codice sconto personale
+                                </p>
+                            )}
                         </div>
                     )}
 
