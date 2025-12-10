@@ -28,8 +28,12 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     useEffect(() => {
         const checkDailyLimit = async () => {
             if (userProfile) {
+                console.log('[DEBUG] Controllo limite giornaliero per user:', userProfile.id);
                 const limitReached = await checkDailyGlobalLimit(userProfile.id);
+                console.log('[DEBUG] Limite raggiunto?', limitReached);
                 setDailyLimitReached(limitReached);
+            } else {
+                console.log('[DEBUG] userProfile non disponibile, skip controllo');
             }
         };
         checkDailyLimit();
@@ -110,6 +114,9 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
+            console.log('[DEBUG] checkDailyGlobalLimit - Controllo coupon creati oggi per user:', userId);
+            console.log('[DEBUG] Data oggi (00:00):', today);
+
             const couponsRef = collection(db, 'GeneratedCoupons');
             const q = query(
                 couponsRef,
@@ -118,6 +125,8 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
             );
 
             const querySnapshot = await getDocs(q);
+            console.log('[DEBUG] Coupon trovati oggi:', querySnapshot.size);
+
             return querySnapshot.size > 0;
         } catch (err) {
             console.error('Error checking daily global limit:', err);

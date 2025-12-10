@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { createUserProfile, updateUserProfile, getUserByPhone } from '../services/dbService';
+import { syncFidelityPoints } from '../services/fidelityService';
 import './ProfileScreen.css';
 
 interface ProfileScreenProps {
@@ -17,6 +18,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     });
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [isSyncing, setIsSyncing] = useState(false);
 
     useEffect(() => {
         if (userProfile) {
@@ -89,6 +91,64 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
 
         // Clear message after 3 seconds
         setTimeout(() => setMessage(null), 3000);
+    };
+
+    const handleSyncFidelity = async () => {
+        if (!userProfile) {
+            setMessage({ type: 'error', text: 'Completa prima il profilo per sincronizzare i punti' });
+            setTimeout(() => setMessage(null), 3000);
+            return;
+        }
+
+        setIsSyncing(true);
+        setMessage(null);
+
+        try {
+            const result = await syncFidelityPoints({
+                email: userProfile.email,
+                firstName: userProfile.firstName,
+                lastName: userProfile.lastName,
+                phone: userProfile.phone
+            });
+
+            if (result.success && result.points !== undefined) {
+                // Aggiorna profilo con punti e customerId
+                const updatedProfile = {
+                    ...userProfile,
+                    loyaltyPoints: result.points,
+                    cassaCloudId: result.customerId,
+                    loyaltyPointsLastSync: new Date()
+                };
+
+                await updateUserProfile(userProfile.id, updatedProfile);
+                localStorage.setItem('user_profile', JSON.stringify(updatedProfile));
+                setUserProfile(updatedProfile);
+
+                setMessage({
+                    type: 'success',
+                    text: `✅ Punti sincronizzati! Hai ${result.points} punti fedeltà`
+                });
+            } else if (result.errorCode === 'MULTIPLE_CUSTOMERS') {
+                setMessage({
+                    type: 'error',
+                    text: 'Trovati multipli clienti con lo stesso nome. Contatta il supporto.'
+                });
+            } else {
+                setMessage({
+                    type: 'error',
+                    text: result.message || 'Errore durante la sincronizzazione'
+                });
+            }
+        } catch (error: any) {
+            console.error('Sync error:', error);
+            setMessage({
+                type: 'error',
+                text: 'Errore di connessione. Riprova più tardi.'
+            });
+        } finally {
+            setIsSyncing(false);
+            setTimeout(() => setMessage(null), 5000);
+        }
     };
 
     return (
@@ -189,6 +249,30 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                     </div>
                 </form>
             </div>
+
+            {userProfile && !isEditing && (
+                <div className="profile-card">
+                    <h3>💳 Punti Fedeltà</h3>
+                    <div className="fidelity-info">
+                        <div className="points-display">
+                            <span className="points-label">Punti attuali:</span>
+                            <span className="points-value">{userProfile.loyaltyPoints || 0}</span>
+                        </div>
+                        {userProfile.loyaltyPointsLastSync && (
+                            <p className="last-sync">
+                                Ultimo aggiornamento: {new Date(userProfile.loyaltyPointsLastSync).toLocaleString('it-IT')}
+                            </p>
+                        )}
+                        <button
+                            onClick={handleSyncFidelity}
+                            disabled={isSyncing}
+                            className="btn btn-secondary"
+                        >
+                            {isSyncing ? '🔄 Sincronizzazione...' : '🔄 Sincronizza Punti'}
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="info-box">
                 <h3>ℹ️ Perché serve il profilo?</h3>
