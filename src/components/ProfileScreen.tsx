@@ -190,6 +190,48 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                 </form>
             </div>
 
+            {/* Fidelity Card Section */}
+            {userProfile && !isEditing && (
+                <div className="profile-card">
+                    <h3>💳 Fidelity Card ZeroSei</h3>
+
+                    {userProfile.cassaCloudId ? (
+                        <div className="fidelity-info">
+                            <div className="points-display">
+                                <span className="points-label">I tuoi Punti:</span>
+                                <span className="points-value">{userProfile.loyaltyPoints || 0}</span>
+                            </div>
+                            <p className="last-sync" style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                                {userProfile.loyaltyPointsLastSync
+                                    ? `Aggiornato: ${new Date(userProfile.loyaltyPointsLastSync).toLocaleString('it-IT')}`
+                                    : ''}
+                            </p>
+                            <button
+                                onClick={handleSyncFidelity}
+                                disabled={isSyncing}
+                                className="btn btn-secondary"
+                                style={{ marginTop: '10px', width: '100%' }}
+                            >
+                                {isSyncing ? '🔄 Sincronizzazione...' : '🔄 Aggiorna Punti'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="fidelity-connect">
+                            <p>Hai già una Fidelity Card in negozio? Collegala ora per vedere i tuoi punti!</p>
+                            <button
+                                onClick={handleSyncFidelity}
+                                disabled={isSyncing}
+                                className="btn btn-primary"
+                                style={{ marginTop: '10px', width: '100%' }}
+                            >
+                                {isSyncing ? '🔍 Ricerca in corso...' : '🔗 Collega Fidelity Card'}
+                            </button>
+                            {syncError && <p className="error-text" style={{ color: 'red', marginTop: '10px', fontSize: '0.9rem' }}>{syncError}</p>}
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="info-box">
                 <h3>ℹ️ Perché serve il profilo?</h3>
                 <p>
