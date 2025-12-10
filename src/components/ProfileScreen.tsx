@@ -33,6 +33,28 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         }
     }, [userProfile]);
 
+    // Auto-sync punti fedeltà al caricamento (se mai sincronizzato o passate 24h)
+    useEffect(() => {
+        const shouldAutoSync = () => {
+            if (!userProfile || isEditing) return false;
+
+            // Mai sincronizzato
+            if (!userProfile.loyaltyPointsLastSync) return true;
+
+            // Controlla se sono passate 24h dall'ultimo sync
+            const lastSync = new Date(userProfile.loyaltyPointsLastSync);
+            const now = new Date();
+            const hoursSinceSync = (now.getTime() - lastSync.getTime()) / (1000 * 60 * 60);
+
+            return hoursSinceSync >= 24;
+        };
+
+        if (shouldAutoSync() && !isSyncing) {
+            console.log('[ProfileScreen] Auto-sync punti fedeltà attivato');
+            handleSyncFidelity();
+        }
+    }, [userProfile, isEditing]);
+
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
