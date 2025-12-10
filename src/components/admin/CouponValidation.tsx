@@ -70,6 +70,33 @@ function CouponValidation() {
                 return;
             }
 
+            // CASO B.2: Verifica limite giornaliero (1 riscatto per utente al giorno)
+            try {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const userCouponsQuery = query(
+                    collection(db, 'GeneratedCoupons'),
+                    where('userId', '==', couponData.userId),
+                    where('status', '==', 'redeemed'),
+                    where('redeemedAt', '>=', today)
+                );
+
+                const dailyRedemptions = await getDocs(userCouponsQuery);
+
+                if (!dailyRedemptions.empty) {
+                    setMessage({
+                        type: 'error',
+                        text: '⛔ LIMIT RAGGIUNTO',
+                        details: 'Questo cliente ha già utilizzato una promozione oggi. Limite di 1 al giorno.',
+                    });
+                    setValidating(false);
+                    return;
+                }
+            } catch (err) {
+                console.error("Error checking daily limit:", err);
+            }
+
             // CASO C: Codice valido - aggiorna stato
             await updateDoc(doc(db, 'GeneratedCoupons', couponDoc.id), {
                 status: 'redeemed',
