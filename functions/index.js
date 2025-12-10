@@ -316,7 +316,7 @@ exports.syncFidelityPoints = functions.https.onCall(async (data, context) => {
         }
 
         // Step 4: Recupera circuito fidelity
-        console.log('[syncFidelityPoints] Cerco circuito fidelity "Fidelity Card ZeroSei 24/25"');
+        console.log('[syncFidelityPoints] Cerco circuito fidelity "FIDELITY CARD ZERO SEI"');
         const circuitsResponse = await fetch(`${CASSANOVA_API_URL}/fidelitycircuit`, {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -329,7 +329,7 @@ exports.syncFidelityPoints = functions.https.onCall(async (data, context) => {
         if (circuitsResponse.ok) {
             const circuitsData = await circuitsResponse.json();
             const circuits = circuitsData.fidelityCircuit || (Array.isArray(circuitsData) ? circuitsData : []);
-            const targetCircuit = circuits.find(c => c.name === 'Fidelity Card ZeroSei 24/25');
+            const targetCircuit = circuits.find(c => c.name === 'FIDELITY CARD ZERO SEI');
 
             if (targetCircuit) {
                 programId = targetCircuit.id;
