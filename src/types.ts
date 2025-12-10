@@ -39,8 +39,6 @@ export interface UserProfile {
     phone: string;
     email: string;
     loyaltyPoints?: number;
-    cassaCloudId?: string; // ID cliente in Cassa in Cloud
-    loyaltyPointsLastSync?: Date; // Timestamp ultima sincronizzazione punti
     lastAccess?: Date;
     createdAt: Date;
     updatedAt: Date;
