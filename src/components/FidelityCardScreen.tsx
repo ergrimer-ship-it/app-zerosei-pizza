@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { UserProfile, LoyaltyCard, LoyaltyReward } from '../types';
 import { getLoyaltyPoints } from '../services/cassaCloudService';
 import { db } from '../firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import './FidelityCardScreen.css';
 
@@ -40,8 +40,18 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
 
                         if (foundId) {
                             customerId = foundId;
-                            // Qui dovremmo idealmente aggiornare il profilo utente nel DB con il nuovo ID
-                            console.log('Found Cassa in Cloud ID:', customerId);
+                            // Salva l'ID nel profilo utente in Firestore
+                            try {
+                                const userDocRef = doc(db, 'users', userProfile.id);
+                                await updateDoc(userDocRef, {
+                                    cassaCloudId: foundId,
+                                    loyaltyPointsLastSync: new Date().toISOString()
+                                });
+                                console.log('✅ Saved Cassa in Cloud ID to Firestore:', customerId);
+                            } catch (updateError) {
+                                console.error('❌ Error saving cassaCloudId to Firestore:', updateError);
+                                // Continuiamo comunque anche se il salvataggio fallisce
+                            }
                         } else {
                             console.warn('Customer not found in Cassa in Cloud');
                         }
