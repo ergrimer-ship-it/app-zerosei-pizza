@@ -48,8 +48,16 @@ exports.getLoyaltyPoints = functions.https.onCall(async (data, context) => {
         const { accessToken, customerId } = data;
         if (!accessToken || !customerId) throw new functions.https.HttpsError('invalid-argument', 'Access token and customer ID are required');
 
+        console.log(`[getLoyaltyPoints] Fetching points for customer ${customerId} in program ${ZEROSEI_PROGRAM_ID}`);
+
+        // Fetch customer data
         const customerResponse = await fetch(`${CASSANOVA_API_URL}/customers/${customerId}`, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'X-Version': API_VERSION }
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+                'X-Version': API_VERSION,
+                'X-Requested-With': '*'
+            }
         });
 
         if (!customerResponse.ok) {
@@ -60,36 +68,59 @@ exports.getLoyaltyPoints = functions.https.onCall(async (data, context) => {
 
         const customerData = await customerResponse.json();
 
-        let points = 0;
+        // Download ALL fidelity points accounts
+        let allAccounts = [];
+        let start = 0;
+        const limit = 100;
 
-        // NEW STRATEGY: Use fidelitypointstransactions endpoint with idCustomer parameter
-        // This endpoint accepts idCustomer as a string (not array) and returns all transactions for that customer
-        const limit = 1000;
-        const transactionsUrl = `${CASSANOVA_API_URL}/fidelitypointstransactions?idCustomer=${customerId}&start=0&limit=${limit}`;
-        console.log(`Fetching transactions for customer: ${transactionsUrl}`);
+        while (true) {
+            const accountsUrl = `${CASSANOVA_API_URL}/fidelitypointsaccounts?start=${start}&limit=${limit}`;
+            const accountsResp = await fetch(accountsUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'X-Version': API_VERSION,
+                    'X-Requested-With': '*'
+                }
+            });
 
-        const transactionsResponse = await fetch(transactionsUrl, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json', 'X-Version': API_VERSION }
-        });
+            if (!accountsResp.ok) {
+                console.error('[getLoyaltyPoints] Error fetching accounts');
+                break;
+            }
 
-        if (!transactionsResponse.ok) {
-            console.error('Transactions API error:', transactionsResponse.status, await transactionsResponse.text());
-            return { success: true, customerId, points: 0, tier: 'Member', lastUpdated: new Date().toISOString() };
+            const accountsData = await accountsResp.json();
+            const batch = accountsData.fidelityPointsAccount || [];
+            const totalCount = accountsData.totalCount || 0;
+
+            allAccounts = allAccounts.concat(batch);
+
+            if (batch.length < limit || allAccounts.length >= totalCount) break;
+            start += limit;
         }
 
-        const transactionsData = await transactionsResponse.json();
-        const transactions = transactionsData.fidelityPointsTransaction || [];
+        console.log(`[getLoyaltyPoints] Downloaded ${allAccounts.length} total accounts`);
 
-        console.log(`Downloaded ${transactions.length} transactions for customer ${customerId}`);
+        // Filter for this customer's account in ZeroSei program (ID 3159)
+        const customerAccount = allAccounts.find(acc =>
+            acc.idCustomer === customerId &&
+            acc.idFidelityPointsProgram === ZEROSEI_PROGRAM_ID
+        );
 
-        // Sum all transaction amounts to get total points
-        points = transactions.reduce((total, transaction) => {
-            return total + (transaction.amount || 0);
-        }, 0);
+        let points = 0;
+        if (customerAccount) {
+            points = customerAccount.amount || 0;
+            console.log(`[getLoyaltyPoints] Found ZeroSei account with ${points} points`);
+        } else {
+            console.log(`[getLoyaltyPoints] No ZeroSei account found for customer ${customerId}`);
+        }
 
-        console.log(`Total points calculated from transactions: ${points}`);
-
-        return { success: true, customerId, points: points, tier: 'Member', lastUpdated: customerData.customer?.lastUpdate || new Date().toISOString() };
+        return {
+            success: true,
+            customerId,
+            points: points,
+            tier: 'Member',
+            lastUpdated: customerData.customer?.lastUpdate || new Date().toISOString()
+        };
     } catch (error) {
         console.error('Error in getLoyaltyPoints:', error);
         throw new functions.https.HttpsError('internal', error.message);
