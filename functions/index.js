@@ -2,16 +2,30 @@ const functions = require('firebase-functions');
 const fetch = require('node-fetch');
 
 const CASSANOVA_API_URL = 'https://api.cassanova.com';
-const API_VERSION = '1.0.0';
+const API_VERSION = '2.0.0'; // Updated to 2.0.0
+const ZEROSEI_PROGRAM_ID = 3159; // Fidelity Card ZeroSei 24/25
+
+// Get API Key from Firebase config
+function getApiKey() {
+    const config = functions.config();
+    return config.cassanova && config.cassanova.api_key ? config.cassanova.api_key : null;
+}
 
 exports.getAccessToken = functions.https.onCall(async (data, context) => {
     try {
-        const { apiKey } = data;
-        if (!apiKey) throw new functions.https.HttpsError('invalid-argument', 'API key is required');
+        // Get API Key from Firebase config (secure!)
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            throw new functions.https.HttpsError('failed-precondition', 'API Key not configured in Firebase');
+        }
 
         const response = await fetch(`${CASSANOVA_API_URL}/apikey/token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Version': API_VERSION },
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Version': API_VERSION,
+                'X-Requested-With': '*'
+            },
             body: JSON.stringify({ apiKey: apiKey })
         });
 
@@ -120,11 +134,20 @@ exports.searchAndSyncFidelityPoints = functions.https.onCall(async (data, contex
 
         console.log(`[searchAndSync] Start search for: ${email}, ${firstName} ${lastName}`);
 
-        // 1. Get Access Token
+        // 1. Get Access Token from Firebase config
+        const apiKey = getApiKey();
+        if (!apiKey) {
+            throw new functions.https.HttpsError('failed-precondition', 'API Key not configured in Firebase');
+        }
+
         const tokenResponse = await fetch(`${CASSANOVA_API_URL}/apikey/token`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-Version': API_VERSION },
-            body: JSON.stringify({ apiKey: '052ee020-a2bb-4383-9ab0-dfef25dd8345' })
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Version': API_VERSION,
+                'X-Requested-With': '*'
+            },
+            body: JSON.stringify({ apiKey })
         });
 
         if (!tokenResponse.ok) throw new Error('Auth failed');
@@ -201,26 +224,53 @@ exports.searchAndSyncFidelityPoints = functions.https.onCall(async (data, contex
             };
         }
 
-        // 3. Fetch Transactions for Points
-        console.log(`[searchAndSync] Fetching points for ${customerId}`);
-        const transUrl = `${CASSANOVA_API_URL}/fidelitypointstransactions?idCustomer=${customerId}&limit=1000`;
-        const transResp = await fetch(transUrl, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'X-Version': API_VERSION }
-        });
+        // 3. Fetch Points from FidelityPointsAccounts for ZeroSei Program (ID 3159)
+        console.log(`[searchAndSync] Fetching points for ${customerId} in program ${ZEROSEI_PROGRAM_ID}`);
+
+        // Download ALL fidelity points accounts
+        let allAccounts = [];
+        let start = 0;
+        const limit = 100;
+
+        while (true) {
+            const accountsUrl = `${CASSANOVA_API_URL}/fidelitypointsaccounts?start=${start}&limit=${limit}`;
+            const accountsResp = await fetch(accountsUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'X-Version': API_VERSION,
+                    'X-Requested-With': '*'
+                }
+            });
+
+            if (!accountsResp.ok) {
+                console.error('[searchAndSync] Error fetching accounts');
+                break;
+            }
+
+            const accountsData = await accountsResp.json();
+            const batch = accountsData.fidelityPointsAccount || [];
+            const totalCount = accountsData.totalCount || 0;
+
+            allAccounts = allAccounts.concat(batch);
+
+            if (batch.length < limit || allAccounts.length >= totalCount) break;
+            start += limit;
+        }
+
+        console.log(`[searchAndSync] Downloaded ${allAccounts.length} total accounts`);
+
+        // Filter for this customer's account in ZeroSei program
+        const customerAccount = allAccounts.find(acc =>
+            acc.idCustomer === customerId &&
+            acc.idFidelityPointsProgram === ZEROSEI_PROGRAM_ID
+        );
 
         let points = 0;
-        let transactionsCount = 0;
-
-        if (transResp.ok) {
-            const transData = await transResp.json();
-            const transactions = transData.fidelityPointsTransaction || []; // Note: API might return singular or plural key
-            transactionsCount = transactions.length;
-
-            // Sum 'amount' of transactions
-            points = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-            console.log(`[searchAndSync] Calculated ${points} points from ${transactionsCount} transactions`);
+        if (customerAccount) {
+            points = customerAccount.amount || 0;
+            console.log(`[searchAndSync] Found ZeroSei account with ${points} points`);
         } else {
-            console.error('[searchAndSync] Error fetching transactions');
+            console.log(`[searchAndSync] No ZeroSei account found for customer ${customerId}`);
         }
 
         return {

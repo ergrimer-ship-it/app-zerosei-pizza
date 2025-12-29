@@ -5,40 +5,21 @@ import app from '../firebase';
 /**
  * Servizio per integrazione con Cassa in Cloud tramite Firebase Cloud Functions
  * Gestisce il recupero dei punti fedeltà e la sincronizzazione dati cliente
+ * 
+ * NOTA: L'API Key è configurata in modo sicuro nelle Cloud Functions, 
+ * MAI esposta al frontend per motivi di sicurezza.
  */
 
 // Inizializza Firebase Functions
 const functions = getFunctions(app);
 
-// Configurazione
-let CASSA_CLOUD_API_KEY = '052ee020-a2bb-4383-9ab0-dfef25dd8345'; // API Key predefinita
+// Token cache (gestito dalle Cloud Functions)
 let ACCESS_TOKEN: string | null = null;
 let TOKEN_EXPIRY: number = 0;
 
 /**
- * Imposta la chiave API di Cassa in Cloud
- */
-export function setCassaCloudApiKey(apiKey: string): void {
-    CASSA_CLOUD_API_KEY = apiKey;
-    // Salva in localStorage per persistenza
-    localStorage.setItem('cassacloud_api_key', apiKey);
-    // Invalida il token corrente
-    ACCESS_TOKEN = null;
-    TOKEN_EXPIRY = 0;
-}
-
-/**
- * Recupera la chiave API salvata
- */
-export function getCassaCloudApiKey(): string {
-    if (!CASSA_CLOUD_API_KEY) {
-        CASSA_CLOUD_API_KEY = localStorage.getItem('cassacloud_api_key') || '052ee020-a2bb-4383-9ab0-dfef25dd8345';
-    }
-    return CASSA_CLOUD_API_KEY;
-}
-
-/**
  * Ottiene un access token OAuth2 tramite Cloud Function
+ * La Cloud Function gestisce l'API Key in modo sicuro
  */
 async function getAccessToken(): Promise<string> {
     try {
@@ -47,14 +28,10 @@ async function getAccessToken(): Promise<string> {
             return ACCESS_TOKEN;
         }
 
-        const apiKey = getCassaCloudApiKey();
-        if (!apiKey) {
-            throw new Error('Chiave API non configurata');
-        }
-
         // Chiama la Cloud Function per ottenere il token
+        // L'API Key è gestita in modo sicuro nel backend
         const getTokenFunction = httpsCallable(functions, 'getAccessToken');
-        const result = await getTokenFunction({ apiKey });
+        const result = await getTokenFunction({});
         const data = result.data as { success: boolean; accessToken: string; expiresIn: number };
 
         if (data.success) {
