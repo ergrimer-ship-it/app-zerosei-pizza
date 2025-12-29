@@ -1,122 +1,58 @@
-import { useState, useEffect } from 'react';
-import { setCassaCloudApiKey, getCassaCloudApiKey, testCassaCloudConnection } from '../../services/cassaCloudService';
 import './CassaCloudSettings.css';
 
+/**
+ * DEPRECATO: Questo componente non è più utilizzato.
+ * L'API Key di Cassa in Cloud è ora configurata in modo sicuro 
+ * nelle Firebase Functions tramite Firebase config.
+ * 
+ * Per configurare: firebase functions:config:set cassanova.api_key="YOUR_KEY"
+ */
 function CassaCloudSettings() {
-    const [apiKey, setApiKey] = useState('');
-    const [testing, setTesting] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
-
-    useEffect(() => {
-        // Carica la chiave API salvata
-        const savedKey = getCassaCloudApiKey();
-        if (savedKey) {
-            setApiKey(savedKey);
-        }
-    }, []);
-
-    const handleSave = () => {
-        setCassaCloudApiKey(apiKey);
-        setTestResult({ success: true, message: 'Chiave API salvata con successo!' });
-        setTimeout(() => setTestResult(null), 3000);
-    };
-
-    const handleTest = async () => {
-        setTesting(true);
-        setTestResult(null);
-
-        try {
-            const result = await testCassaCloudConnection();
-            if (result.success) {
-                setTestResult({
-                    success: true,
-                    message: '✅ Connessione a Cassa in Cloud riuscita!'
-                });
-            } else {
-                setTestResult({
-                    success: false,
-                    message: `❌ Errore: ${result.error}`
-                });
-            }
-        } catch (error: any) {
-            setTestResult({
-                success: false,
-                message: `❌ Errore imprevisto: ${error.message}`
-            });
-        }
-
-        setTesting(false);
-    };
     return (
         <div className="cassa-cloud-settings">
-            <h2>Impostazioni Cassa in Cloud</h2>
-            <p className="description">
-                Configura l'integrazione con Cassa in Cloud per sincronizzare i punti fedeltà dei clienti.
-            </p>
-
-            <div className="settings-form">
-                <div className="form-group">
-                    <label htmlFor="apiKey">Chiave API</label>
-                    <input
-                        id="apiKey"
-                        type="text"
-                        className="input"
-                        value={apiKey}
-                        onChange={(e) => setApiKey(e.target.value)}
-                        placeholder="Inserisci la chiave API di Cassa in Cloud"
-                    />
-                    <small>Puoi trovare la chiave API nelle impostazioni del tuo account Cassa in Cloud.</small>
-                </div>
-
-                <div className="button-group">
-                    <button
-                        className="btn btn-primary"
-                        onClick={handleSave}
-                        disabled={!apiKey}
-                    >
-                        💾 Salva
-                    </button>
-                    <button
-                        className="btn btn-secondary"
-                        onClick={handleTest}
-                        disabled={!apiKey || testing}
-                    >
-                        {testing ? '⏳ Test in corso...' : '🔍 Testa Connessione'}
-                    </button>
-                </div>
-
-                {testResult && (
-                    <div className={`test-result ${testResult.success ? 'success' : 'error'}`}>
-                        {testResult.message}
-                    </div>
-                )}
-            </div>
-
-            <div className="info-section">
-                <h3>ℹ️ Come configurare</h3>
-                <ol>
-                    <li>Accedi al tuo account <strong>Cassa in Cloud</strong></li>
-                    <li>Vai su <strong>Impostazioni → API Keys</strong></li>
-                    <li>Copia la chiave API valida</li>
-                    <li>Incollala nel campo sopra e clicca <strong>Salva</strong></li>
-                    <li>Clicca <strong>Testa Connessione</strong> per verificare</li>
+            <h2>⚠️ Configurazione Cassa in Cloud</h2>
+            <div className="info-section" style={{ padding: '20px', backgroundColor: '#fff3cd', borderRadius: '8px', border: '1px solid #ffc107' }}>
+                <h3>📌 Configurazione Spostata nel Backend</h3>
+                <p>
+                    Per motivi di sicurezza, l'API Key di Cassa in Cloud non viene più configurata nel frontend dell'app.
+                </p>
+                <p style={{ marginTop: '15px' }}>
+                    <strong>La configurazione è ora gestita tramite Firebase Functions:</strong>
+                </p>
+                <ol style={{ marginTop: '10px', marginLeft: '20px' }}>
+                    <li>Apri il terminale nella cartella del progetto</li>
+                    <li>
+                        Esegui il comando:
+                        <code style={{ display: 'block', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginTop: '5px', fontFamily: 'monospace' }}>
+                            firebase functions:config:set cassanova.api_key="TUA_API_KEY"
+                        </code>
+                    </li>
+                    <li>
+                        Deploy delle functions:
+                        <code style={{ display: 'block', padding: '10px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginTop: '5px', fontFamily: 'monospace' }}>
+                            firebase deploy --only functions
+                        </code>
+                    </li>
                 </ol>
+                <p style={{ marginTop: '15px', fontSize: '0.9em', color: '#666' }}>
+                    ℹ️ Questa modifica garantisce che l'API Key non sia mai esposta al codice frontend e quindi non sia visibile agli utenti.
+                </p>
             </div>
 
-            <div className="api-info">
-                <h3>📋 Informazioni API</h3>
+            <div className="api-info" style={{ marginTop: '20px' }}>
+                <h3>📋 Informazioni Tecniche</h3>
                 <div className="info-grid">
                     <div className="info-item">
-                        <strong>URL Base:</strong>
-                        <code>https://my.cassanova.com/api</code>
+                        <strong>Program ID ZeroSei 24/25:</strong>
+                        <code>3159</code>
                     </div>
                     <div className="info-item">
-                        <strong>Endpoint Fedeltà:</strong>
-                        <code>/fidelitypointsaccounts</code>
+                        <strong>URL Base API:</strong>
+                        <code>https://api.cassanova.com</code>
                     </div>
                     <div className="info-item">
-                        <strong>Autenticazione:</strong>
-                        <span>OAuth2 (Bearer Token)</span>
+                        <strong>API Version:</strong>
+                        <code>2.0.0</code>
                     </div>
                 </div>
             </div>
