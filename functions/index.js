@@ -185,86 +185,66 @@ exports.searchAndSyncFidelityPoints = functions.https.onCall(async (data, contex
         const tokenData = await tokenResponse.json();
         const accessToken = tokenData.access_token;
 
-        // 2. Search Strategy
-        let customerId = null;
-        let customerDataFound = null;
+        // 2. Download ALL customers and search client-side
+        console.log('[searchAndSync] Downloading all customers...');
 
-        // A. Try Email
-        console.log('[searchAndSync] Searching by Email...');
-        const emailSearchUrl = `${CASSANOVA_API_URL}/customers?filter=email==${encodeURIComponent(email)}`;
-        const emailResp = await fetch(emailSearchUrl, {
-            headers: { 'Authorization': `Bearer ${accessToken}`, 'X-Version': API_VERSION }
-        });
+        let allCustomers = [];
+        let start = 0;
+        const limit = 100;
 
-        if (emailResp.ok) {
-            const res = await emailResp.json();
-            const list = res.customers || (Array.isArray(res) ? res : []);
-            if (list.length > 0) {
-                customerId = list[0].id;
-                customerDataFound = list[0];
-                console.log(`[searchAndSync] Found by Email: ${customerId}`);
-            }
-        }
-
-        // B. Try Name + Surname (if not found by email)
-        if (!customerId && firstName && lastName) {
-            console.log('[searchAndSync] Searching by Name...');
-            const nameSearchUrl = `${CASSANOVA_API_URL}/customers?filter=firstName==${encodeURIComponent(firstName)};lastName==${encodeURIComponent(lastName)}`;
-            const nameResp = await fetch(nameSearchUrl, {
-                headers: { 'Authorization': `Bearer ${accessToken}`, 'X-Version': API_VERSION }
+        while (true) {
+            const customersUrl = `${CASSANOVA_API_URL}/customers?start=${start}&limit=${limit}`;
+            const customersResp = await fetch(customersUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'X-Version': API_VERSION,
+                    'X-Requested-With': '*'
+                }
             });
 
-            if (nameResp.ok) {
-                const res = await nameResp.json();
-                const list = res.customers || (Array.isArray(res) ? res : []);
-
-                if (list.length === 1) {
-                    customerId = list[0].id; // Unique match
-                    customerDataFound = list[0];
-                    console.log(`[searchAndSync] Found by Name (Unique): ${customerId}`);
-                } else if (list.length > 1) {
-                    // Try to disambiguate with phone
-                    if (phone) {
-                        const phoneMatch = list.find(c => c.phoneNumber === phone || c.phone === phone);
-                        if (phoneMatch) {
-                            customerId = phoneMatch.id;
-                            customerDataFound = phoneMatch;
-                            console.log(`[searchAndSync] Found by Name + Phone match: ${customerId}`);
-                        }
-                    }
-
-                    if (!customerId) {
-                        // Still ambiguous? Return conflict
-                        console.warn('[searchAndSync] Multiple customers found, ambiguous');
-                        return {
-                            success: false,
-                            code: 'MULTIPLE_CUSTOMERS',
-                            message: 'Trovati più clienti con lo stesso nome. Contatta il negozio.'
-                        };
-                    }
-                }
+            if (!customersResp.ok) {
+                console.error('[searchAndSync] Error fetching customers');
+                break;
             }
+
+            const customersData = await customersResp.json();
+            const batch = customersData.customers || [];
+            const totalCount = customersData.totalCount || 0;
+
+            allCustomers = allCustomers.concat(batch);
+            console.log(`[searchAndSync] Downloaded ${allCustomers.length}/${totalCount} customers`);
+
+            if (batch.length < limit || allCustomers.length >= totalCount) break;
+            start += limit;
         }
 
-        if (!customerId) {
+        // Find customer by email (case-insensitive)
+        const customerFound = allCustomers.find(c =>
+            c.email && c.email.toLowerCase() === email.toLowerCase()
+        );
+
+        if (!customerFound) {
             console.log('[searchAndSync] Customer NOT found');
             return {
                 success: false,
                 code: 'CUSTOMER_NOT_FOUND',
-                message: 'Nessuna Fidelity Card trovata per i tuoi dati. Registrati alla cassa!'
+                message: 'Nessuna Fidelity Card trovata. Registrati alla cassa!'
             };
         }
+
+        const customerId = customerFound.id;
+        console.log(`[searchAndSync] Found customer ${customerId} for email ${email}`);
 
         // 3. Fetch Points from FidelityPointsAccounts for ZeroSei Program (ID 3159)
         console.log(`[searchAndSync] Fetching points for ${customerId} in program ${ZEROSEI_PROGRAM_ID}`);
 
         // Download ALL fidelity points accounts
         let allAccounts = [];
-        let start = 0;
-        const limit = 100;
+        let accStart = 0;
+        const accLimit = 100;
 
         while (true) {
-            const accountsUrl = `${CASSANOVA_API_URL}/fidelitypointsaccounts?start=${start}&limit=${limit}`;
+            const accountsUrl = `${CASSANOVA_API_URL}/fidelitypointsaccounts?start=${accStart}&limit=${accLimit}`;
             const accountsResp = await fetch(accountsUrl, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -284,8 +264,8 @@ exports.searchAndSyncFidelityPoints = functions.https.onCall(async (data, contex
 
             allAccounts = allAccounts.concat(batch);
 
-            if (batch.length < limit || allAccounts.length >= totalCount) break;
-            start += limit;
+            if (batch.length < accLimit || allAccounts.length >= totalCount) break;
+            accStart += accLimit;
         }
 
         console.log(`[searchAndSync] Downloaded ${allAccounts.length} total accounts`);
@@ -308,7 +288,7 @@ exports.searchAndSyncFidelityPoints = functions.https.onCall(async (data, contex
             success: true,
             customerId: customerId,
             points: points,
-            customerName: `${customerDataFound.firstName} ${customerDataFound.lastName}`,
+            customerName: `${customerFound.firstName} ${customerFound.lastName}`,
             lastSync: new Date().toISOString()
         };
 
