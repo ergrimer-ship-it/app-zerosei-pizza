@@ -172,57 +172,37 @@ export async function getCachedLoyaltyPoints(customerId: string): Promise<Loyalt
 }
 
 /**
- * Cerca un cliente su Cassa in Cloud per email o telefono
- */
-export async function searchCustomer(params: { email?: string; phone?: string }): Promise<{ id: string; firstName: string; lastName: string } | null> {
-    try {
-        const token = await getAccessToken();
-        if (!token) {
-            console.warn('Could not obtain access token');
-            return null;
-        }
-
-        const searchFunction = httpsCallable(functions, 'searchCustomer');
-        const result = await searchFunction({ accessToken: token, ...params });
-        const data = result.data as { success: boolean; customer?: any };
-
-        if (data.success && data.customer) {
-            return data.customer;
-        }
-
-        return null;
-    } catch (error) {
-        console.error('Error searching customer:', error);
-        return null;
-    }
-}
-
-/**
- * Collega il profilo locale a Cassa in Cloud cercando per email o telefono
+ * Collega il profilo locale a Cassa in Cloud cercando per email
+ * Usa direttamente searchAndSyncFidelityPoints per trovare e recuperare i dati
  */
 export async function linkCustomerProfile(userProfile: any): Promise<string | null> {
     if (userProfile.cassaCloudId) {
         return userProfile.cassaCloudId;
     }
 
-    // Cerca per email
-    if (userProfile.email) {
-        const customer = await searchCustomer({ email: userProfile.email });
-        if (customer) {
-            return customer.id;
-        }
-    }
+    // Usa searchAndSyncFidelityPoints per cercare il cliente
+    try {
+        const searchAndSync = httpsCallable(functions, 'searchAndSyncFidelityPoints');
+        const result = await searchAndSync({
+            email: userProfile.email,
+            firstName: userProfile.firstName,
+            lastName: userProfile.lastName,
+            phone: userProfile.phone
+        });
 
-    // Cerca per telefono (rimuovi spazi e caratteri non numerici)
-    if (userProfile.phone) {
-        const cleanPhone = userProfile.phone.replace(/\D/g, '');
-        const customer = await searchCustomer({ phone: cleanPhone });
-        if (customer) {
-            return customer.id;
-        }
-    }
+        const data = result.data as any;
 
-    return null;
+        if (data.success && data.customerId) {
+            console.log('[linkCustomerProfile] Found customer:', data.customerId, 'with', data.points, 'points');
+            return data.customerId;
+        }
+
+        console.log('[linkCustomerProfile] Customer not found in Cassa in Cloud');
+        return null;
+    } catch (error) {
+        console.error('[linkCustomerProfile] Error:', error);
+        return null;
+    }
 }
 
 /**
