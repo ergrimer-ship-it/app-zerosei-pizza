@@ -40,17 +40,21 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
 
                         if (foundId) {
                             customerId = foundId;
-                            // Salva l'ID nel profilo utente in Firestore
-                            try {
-                                const userDocRef = doc(db, 'users', userProfile.id);
-                                await updateDoc(userDocRef, {
-                                    cassaCloudId: foundId,
-                                    loyaltyPointsLastSync: new Date().toISOString()
-                                });
-                                console.log('✅ Saved Cassa in Cloud ID to Firestore:', customerId);
-                            } catch (updateError) {
-                                console.error('❌ Error saving cassaCloudId to Firestore:', updateError);
-                                // Continuiamo comunque anche se il salvataggio fallisce
+                            // Salva l'ID nel profilo utente in Firestore (solo se l'utente ha un ID)
+                            if (userProfile.id) {
+                                try {
+                                    const userDocRef = doc(db, 'users', userProfile.id);
+                                    await updateDoc(userDocRef, {
+                                        cassaCloudId: foundId,
+                                        loyaltyPointsLastSync: new Date().toISOString()
+                                    });
+                                    console.log('✅ Saved Cassa in Cloud ID to Firestore:', customerId);
+                                } catch (updateError) {
+                                    console.error('❌ Error saving cassaCloudId to Firestore:', updateError);
+                                    // Continuiamo comunque anche se il salvataggio fallisce
+                                }
+                            } else {
+                                console.warn('⚠️ User profile not saved yet, skipping cassaCloudId save');
                             }
                         } else {
                             console.warn('Customer not found in Cassa in Cloud');
