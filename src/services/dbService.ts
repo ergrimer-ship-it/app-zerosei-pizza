@@ -357,11 +357,16 @@ export async function updateFavorite(id: string, modifications: PizzaModificatio
 
 export async function getFavoritesByUser(userId: string): Promise<FavoriteItem[]> {
     const favoritesRef = collection(db, 'favorites');
-    const q = query(favoritesRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const q = query(favoritesRef, where('userId', '==', userId));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate()
-    } as FavoriteItem));
+    } as FavoriteItem)).sort((a, b) => {
+        // Sort by createdAt desc in memory
+        const dateA = a.createdAt?.getTime() || 0;
+        const dateB = b.createdAt?.getTime() || 0;
+        return dateB - dateA;
+    });
 }

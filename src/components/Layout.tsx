@@ -46,6 +46,7 @@ function Layout({ children, cart }: LayoutProps) {
     const menuItems = [
         { path: '/', label: 'Home', icon: '🏠' },
         { path: '/menu', label: 'Menù', icon: '🍕' },
+        { path: '/favorites', label: 'I Miei Preferiti', icon: '❤️' },
         { path: '/news', label: 'Novità e Offerte', icon: '📰' },
         { path: '/fidelity', label: 'Fidelity Card', icon: '🎁' },
         { path: '/profile', label: 'Profilo', icon: '👤' },

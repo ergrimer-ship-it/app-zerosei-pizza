@@ -105,7 +105,7 @@ const defaultConfig: HomeConfig = {
             icon: '❤️',
             title: 'I Miei Preferiti',
             description: 'Le tue pizze salvate',
-            color: '#E91E63',
+            color: '#FFFFFF',
             visible: true,
             order: 5
         }
