@@ -14,8 +14,8 @@ export default defineConfig({
                 name: 'ZeroSei Pizza',
                 short_name: 'ZeroSei',
                 description: 'App per ordinare pizza d\'asporto da ZeroSei',
-                theme_color: '#E74C3C',
-                background_color: '#FFFFFF',
+                theme_color: '#D4AF37',
+                background_color: '#121212',
                 display: 'standalone',
                 icons: [
                     {
