@@ -113,7 +113,8 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                 phone: formData.phone,
                 email: formData.email,
                 loyaltyPoints: userProfile?.loyaltyPoints || 0,
-                createdAt: userProfile?.createdAt || new Date(),
+                // Ensure createdAt is a Date object, handling string from localStorage
+                createdAt: userProfile?.createdAt ? new Date(userProfile.createdAt) : new Date(),
                 updatedAt: new Date()
             };
 

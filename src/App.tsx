@@ -28,7 +28,7 @@ function App() {
 
     // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
-        console.log('App Version: v1.0.3 - UI Error Reveal');
+        console.log('App Version: v1.0.4 - Date Fix (Safe Convert)');
         const savedCart = loadCart();
         setCart(savedCart);
 

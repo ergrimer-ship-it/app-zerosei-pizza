@@ -124,15 +124,24 @@ export async function deleteCategory(id: string): Promise<void> {
 // USER PROFILES
 // ============================================
 
+// Helper per convertire date da Firestore (Timestamp, stringhe o Date)
+const convertToDate = (val: any): Date | undefined => {
+    if (!val) return undefined;
+    if (typeof val.toDate === 'function') return val.toDate(); // Firestore Timestamp
+    if (val instanceof Date) return val;
+    return new Date(val); // Stringa o numero
+};
+
 export async function getUserProfile(id: string): Promise<UserProfile | null> {
     const userRef = doc(db, 'users', id);
     const snapshot = await getDoc(userRef);
     if (!snapshot.exists()) return null;
+    const data = snapshot.data();
     return {
         id: snapshot.id,
-        ...snapshot.data(),
-        createdAt: snapshot.data().createdAt?.toDate(),
-        updatedAt: snapshot.data().updatedAt?.toDate()
+        ...data,
+        createdAt: convertToDate(data.createdAt),
+        updatedAt: convertToDate(data.updatedAt)
     } as UserProfile;
 }
 
@@ -144,7 +153,15 @@ export async function createUserProfile(profile: Omit<UserProfile, 'id' | 'creat
 
 export async function updateUserProfile(id: string, updates: Partial<UserProfile>): Promise<void> {
     const userRef = doc(db, 'users', id);
-    await setDoc(userRef, { ...updates, updatedAt: Timestamp.now() }, { merge: true });
+    // Ensure dates are Timestamps if passed as updates
+    const dataToUpdate: any = { ...updates, updatedAt: Timestamp.now() };
+    if (updates.createdAt) {
+        // If it's a string or Date, convert to Timestamp for consistency
+        const date = convertToDate(updates.createdAt);
+        if (date) dataToUpdate.createdAt = Timestamp.fromDate(date);
+    }
+
+    await setDoc(userRef, dataToUpdate, { merge: true });
 }
 
 export async function getUserByPhone(phone: string): Promise<UserProfile | null> {
@@ -153,16 +170,14 @@ export async function getUserByPhone(phone: string): Promise<UserProfile | null>
     const snapshot = await getDocs(q);
     if (snapshot.empty) return null;
     const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data(), createdAt: doc.data().createdAt?.toDate(), updatedAt: doc.data().updatedAt?.toDate() } as UserProfile;
+    const data = doc.data();
+    return {
+        id: doc.id,
+        ...data,
+        createdAt: convertToDate(data.createdAt),
+        updatedAt: convertToDate(data.updatedAt)
+    } as UserProfile;
 }
-
-// Helper per convertire date da Firestore (Timestamp, stringhe o Date)
-const convertToDate = (val: any): Date | undefined => {
-    if (!val) return undefined;
-    if (typeof val.toDate === 'function') return val.toDate(); // Firestore Timestamp
-    if (val instanceof Date) return val;
-    return new Date(val); // Stringa o numero
-};
 
 export async function getAllUsers(): Promise<UserProfile[]> {
     const usersRef = collection(db, 'users');
