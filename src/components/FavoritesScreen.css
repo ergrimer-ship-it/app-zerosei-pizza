@@ -1,0 +1,70 @@
+.favorites-screen {
+    padding-bottom: 100px;
+}
+
+.empty-favorites {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--color-text-secondary);
+}
+
+.empty-favorites p {
+    margin-bottom: var(--spacing-lg);
+}
+
+.favorites-list {
+    display: grid;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+}
+
+.favorite-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+}
+
+.favorite-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--spacing-xs);
+}
+
+.favorite-header h3 {
+    margin: 0;
+    color: var(--color-text);
+}
+
+.remove-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.favorite-details {
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.favorite-mods ul {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 8px 0;
+}
+
+.favorite-notes {
+    font-style: italic;
+    margin-top: 4px;
+}
+
+.add-fav-to-cart {
+    width: 100%;
+}

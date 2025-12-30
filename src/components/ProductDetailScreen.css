@@ -204,10 +204,18 @@
 }
 
 .add-to-cart-btn,
-.order-now-btn {
+.order-now-btn,
+.save-favorite-btn {
     width: 100%;
     padding: var(--spacing-md);
     font-size: var(--font-size-lg);
+}
+
+.save-favorite-btn {
+    background-color: white;
+    color: var(--color-primary);
+    border: 2px solid var(--color-primary);
+    margin-bottom: var(--spacing-xs);
 }
 
 @media (min-width: 768px) {

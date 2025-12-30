@@ -1,7 +1,7 @@
 import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from '../firebase';
-import type { Product, Category, UserProfile, Order, OrderStatus, PizzaModification, NewsPromotion, ProductCategory } from '../types';
+import type { Product, Category, UserProfile, Order, OrderStatus, PizzaModification, NewsPromotion, ProductCategory, FavoriteItem } from '../types';
 
 // ============================================
 // PRODUCTS
@@ -324,3 +324,35 @@ export async function deletePromotion(id: string): Promise<void> {
 }
 
 
+
+// ============================================
+// FAVORITES
+// ============================================
+
+export async function addFavorite(userId: string, product: Product, modifications: PizzaModification[], notes?: string): Promise<string> {
+    const favoritesRef = collection(db, 'favorites');
+    const docRef = await addDoc(favoritesRef, {
+        userId,
+        product,
+        modifications,
+        notes,
+        createdAt: Timestamp.now()
+    });
+    return docRef.id;
+}
+
+export async function removeFavorite(id: string): Promise<void> {
+    const favoriteRef = doc(db, 'favorites', id);
+    await deleteDoc(favoriteRef);
+}
+
+export async function getFavoritesByUser(userId: string): Promise<FavoriteItem[]> {
+    const favoritesRef = collection(db, 'favorites');
+    const q = query(favoritesRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate()
+    } as FavoriteItem));
+}

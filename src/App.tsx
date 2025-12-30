@@ -8,6 +8,7 @@ import ProductDetailScreen from './components/ProductDetailScreen';
 import CartScreen from './components/CartScreen';
 import ProfileScreen from './components/ProfileScreen';
 import NewsOffersScreen from './components/NewsOffersScreen';
+import FavoritesScreen from './components/FavoritesScreen'; // New Import
 import OfferDetailScreen from './components/OfferDetailScreen';
 import FidelityCardScreen from './components/FidelityCardScreen';
 import AdminLogin from './components/AdminLogin';
@@ -28,7 +29,7 @@ function App() {
 
     // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
-        console.log('App Version: v1.1.1 - Hotfix Fidelity Build');
+        console.log('App Version: v1.2.0 - Favorites Feature');
         const savedCart = loadCart();
         setCart(savedCart);
 
@@ -91,6 +92,7 @@ function App() {
                             <Route path="/cart" element={<CartScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
                             <Route path="/profile" element={<ProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />} />
                             <Route path="/news" element={<NewsOffersScreen />} />
+                            <Route path="/favorites" element={<FavoritesScreen cart={cart} setCart={setCart} />} />
                             <Route path="/offer/:id" element={<OfferDetailScreen userProfile={userProfile} />} />
                             <Route path="/fidelity" element={<FidelityCardScreen userProfile={userProfile} />} />
                             <Route path="/debug" element={<DebugProducts />} />

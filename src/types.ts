@@ -221,3 +221,16 @@ export interface GeneratedCoupon {
     createdAt: Date;
     redeemedAt?: Date;
 }
+
+// ============================================
+// FAVORITES TYPES
+// ============================================
+
+export interface FavoriteItem {
+    id: string;
+    userId: string;
+    product: Product;
+    modifications: PizzaModification[];
+    notes?: string;
+    createdAt: Date;
+}

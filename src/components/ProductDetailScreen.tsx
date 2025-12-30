@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Product, Cart, PizzaModification } from '../types';
 import { addToCart } from '../services/cartService';
 import { openWhatsApp } from '../services/whatsappService';
-import { getProductById } from '../services/dbService';
+import { getProductById, addFavorite } from '../services/dbService';
 import { getModifications } from '../services/modificationService';
 import './ProductDetailScreen.css';
 
@@ -97,6 +97,35 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
             }
 
             openWhatsApp(tempCart, userInfo);
+        }
+    };
+
+    const handleSaveFavorite = async () => {
+        const userProfileStr = localStorage.getItem('user_profile');
+        if (!userProfileStr) {
+            alert('Devi aver creato un profilo per salvare i preferiti!');
+            navigate('/profile');
+            return;
+        }
+
+        if (product) {
+            try {
+                const userProfile = JSON.parse(userProfileStr);
+                // Fallback if ID is missing (should verify implementation of loadProfile)
+                // Assuming userProfile.id exists if loaded correctly. 
+                // However, localStorage might lack it if older version.
+                // ideally we should check userProfile.id but for now let's use the object check.
+                if (!userProfile.id) {
+                    alert('Errore: Profilo incompleto. Prova a ricaricare la pagina o aggiornare il profilo.');
+                    return;
+                }
+
+                await addFavorite(userProfile.id, product, selectedModifications, notes);
+                alert('Pizza aggiunta ai tuoi Preferiti! ❤️');
+            } catch (error) {
+                console.error('Error saving favorite:', error);
+                alert('Errore durante il salvataggio nei preferiti.');
+            }
         }
     };
 
@@ -204,6 +233,9 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
                 </div>
 
                 <div className="action-buttons">
+                    <button className="btn btn-secondary save-favorite-btn" onClick={handleSaveFavorite}>
+                        ❤️ Salva nei Preferiti
+                    </button>
                     <button className="btn btn-primary add-to-cart-btn" onClick={handleAddToCart}>
                         Aggiungi al carrello - €{getTotalPrice().toFixed(2)}
                     </button>
