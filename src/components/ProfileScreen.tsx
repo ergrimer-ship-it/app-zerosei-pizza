@@ -149,9 +149,13 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
             setUserProfile(newProfile);
             setIsEditing(false);
             setMessage({ type: 'success', text: 'Profilo salvato con successo!' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving profile:', error);
-            setMessage({ type: 'error', text: 'Errore nel salvataggio del profilo. Riprova.' });
+            // DEBUG: Mostriamo il messaggio dell'errore vero per capire cosa succede su mobile
+            setMessage({
+                type: 'error',
+                text: `Errore: ${error.message || 'Errore sconosciuto'}. Codice: ${error.code || 'N/A'}`
+            });
         }
 
         // Clear message after 3 seconds
