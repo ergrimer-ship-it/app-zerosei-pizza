@@ -323,6 +323,16 @@ export async function deletePromotion(id: string): Promise<void> {
     await deleteDoc(promotionRef);
 }
 
+export async function uploadPromotionImage(file: File): Promise<string> {
+    const storage = getStorage();
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+    const storageRef = ref(storage, `promotion_images/${timestamp}_${safeName}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+}
+
 
 
 // ============================================

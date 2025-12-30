@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { NewsPromotion } from '../../types';
-import { getAllPromotions, createPromotion, updatePromotion, deletePromotion } from '../../services/dbService';
+import { getAllPromotions, createPromotion, updatePromotion, deletePromotion, uploadPromotionImage } from '../../services/dbService';
 import './PromotionManagement.css';
 
 interface PromotionFormData {
@@ -160,13 +160,48 @@ function PromotionManagement() {
                             />
                         </div>
                         <div className="form-group">
-                            <label>URL Immagine</label>
-                            <input
-                                type="text"
-                                placeholder="URL dell'immagine della promozione"
-                                value={formData.imageUrl}
-                                onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                            />
+                            <label>Immagine</label>
+                            <div className="image-upload-container">
+                                <input
+                                    type="text"
+                                    placeholder="URL dell'immagine (o carica file sotto)"
+                                    value={formData.imageUrl}
+                                    onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                                />
+                                <div className="file-upload-wrapper">
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            try {
+                                                // Show loading indicator locally if needed, or just rely on async
+                                                const url = await uploadPromotionImage(file);
+                                                setFormData(prev => ({ ...prev, imageUrl: url }));
+                                            } catch (error) {
+                                                console.error('Error uploading image:', error);
+                                                alert('Errore nel caricamento dell\'immagine');
+                                            }
+                                        }}
+                                        style={{ marginTop: '8px' }}
+                                    />
+                                    <small style={{ display: 'block', color: '#666', marginTop: '4px' }}>
+                                        Carica un'immagine dal tuo dispositivo (JPG, PNG)
+                                    </small>
+                                </div>
+                                {formData.imageUrl && (
+                                    <div className="image-preview" style={{ marginTop: '10px' }}>
+                                        <img
+                                            src={formData.imageUrl}
+                                            alt="Preview"
+                                            style={{ maxHeight: '100px', borderRadius: '4px', border: '1px solid #ddd' }}
+                                            onError={(e) => (e.currentTarget.style.display = 'none')}
+                                        />
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         <div className="form-row">
                             <div className="form-group">
