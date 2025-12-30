@@ -162,6 +162,15 @@ export interface LoyaltyCard {
     points: number;
     tier?: string;
     lastUpdated: Date;
+    transactions?: LoyaltyTransaction[];
+}
+
+export interface LoyaltyTransaction {
+    id: string;
+    date: Date;
+    amount: number;
+    description: string;
+    type: 'earning' | 'redemption';
 }
 
 export interface LoyaltyReward {

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test Marco Pistuggia - Fidelity Points</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBz_xz-wnL7NQVo0AESwXC6pPPLHJwU2S4",
+            authDomain: "app-zerosei-pizza.firebaseapp.com",
+            projectId: "app-zerosei-pizza",
+            storageBucket: "app-zerosei-pizza.firebasestorage.app",
+            messagingSenderId: "912128427084",
+            appId: "1:912128427084:web:6a8e9c1d8c2b4f3e5d6a7b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const functions = getFunctions(app);
+
+        async function testMarco() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p style="color:blue">Testing Marco Pistuggia...</p>';
+
+            try {
+                const searchAndSync = httpsCallable(functions, 'searchAndSyncFidelityPoints');
+                const result = await searchAndSync({
+                    email: 'marcopistuggia1@gmail.com',
+                    firstName: 'Marco',
+                    lastName: 'Pistuggia'
+                });
+
+                console.log('Result:', result);
+
+                const data = result.data;
+                let html = '<h2>Result:</h2><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                if (data.success) {
+                    html += `<div style="background:#d4edda;padding:20px;margin:10px 0;border-radius:8px;">
+                        <h3 style="color:#155724">✓ Customer Found!</h3>
+                        <p><strong>Customer ID:</strong> ${data.customerId}</p>
+                        <p><strong>Points:</strong> ${data.points}</p>
+                        <p><strong>Customer Name:</strong> ${data.customerName}</p>
+                        <p><strong>Last Sync:</strong> ${data.lastSync}</p>
+                    </div>`;
+
+                    if (data.points === 0) {
+                        html += `<div style="background:#fff3cd;padding:20px;margin:10px 0;border-radius:8px;">
+                            <h3 style="color:#856404">⚠️ WARNING: Points are 0</h3>
+                            <p>Possible reasons:</p>
+                            <ul>
+                                <li>Customer has no points in program "Fidelity Card ZeroSei 24/25" (ID 3159)</li>
+                                <li>Points are in a different fidelity program</li>
+                                <li>Customer account exists but has no fidelity card linked</li>
+                            </ul>
+                        </div>`;
+                    }
+                } else {
+                    html += `<div style="background:#f8d7da;padding:20px;margin:10px 0;border-radius:8px;">
+                        <h3 style="color:#721c24">✗ Customer Not Found</h3>
+                        <p><strong>Code:</strong> ${data.code}</p>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                    </div>`;
+                }
+
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `<div style="background:#f8d7da;padding:20px;margin:10px 0;border-radius:8px;">
+                    <h3 style="color:#721c24">✗ Error</h3>
+                    <pre style="color:red">${error.message}\n${JSON.stringify(error, null, 2)}</pre>
+                </div>`;
+            }
+        }
+
+        window.testMarco = testMarco;
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Test Fidelity Points - Marco Pistuggia</h1>
+    <p><strong>Email:</strong> marcopistuggia1@gmail.com</p>
+    <button onclick="testMarco()">🔍 Test Cloud Function</button>
+    <div id="result"></div>
+</body>
+
+</html>

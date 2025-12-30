@@ -31,6 +31,108 @@
     margin: 0;
 }
 
+/* Quick Re-Order */
+.reorder-section {
+    padding: 0 var(--spacing-lg);
+    margin-top: -30px;
+    /* Overlap hero slightly for depth */
+    position: relative;
+    z-index: 10;
+    margin-bottom: var(--spacing-xl);
+}
+
+.reorder-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-lg);
+    border: 2px solid var(--color-primary);
+    /* Gold border to highlight */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.reorder-header h2 {
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-xs);
+    font-size: var(--font-size-xl);
+}
+
+.reorder-header p {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-md);
+    font-size: var(--font-size-md);
+}
+
+.reorder-summary {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    width: 100%;
+    margin-bottom: var(--spacing-md);
+    text-align: left;
+}
+
+.reorder-items {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.reorder-items li {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    margin-bottom: 4px;
+    border-bottom: 1px dashed var(--color-border);
+    padding-bottom: 4px;
+}
+
+.reorder-items li:last-child {
+    border-bottom: none;
+}
+
+.reorder-items .more-items {
+    font-style: italic;
+    color: var(--color-text-secondary);
+    margin-top: 4px;
+}
+
+.reorder-total {
+    font-weight: bold;
+    text-align: right;
+    color: var(--color-primary);
+    font-size: var(--font-size-md);
+}
+
+.reorder-btn {
+    background: var(--color-primary);
+    color: var(--color-bg);
+    border: none;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-md);
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    width: 100%;
+}
+
+.reorder-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    background: #c0912e;
+    /* Darker gold */
+}
+
+.reorder-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* ============================================
    CTA SECTION
    ============================================ */

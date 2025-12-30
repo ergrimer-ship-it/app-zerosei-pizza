@@ -2,7 +2,7 @@
     padding-bottom: var(--spacing-3xl);
 }
 
-.screen-title {
+.menu-screen .screen-title {
     text-align: center;
     margin-bottom: var(--spacing-2xl);
     color: var(--color-primary);
@@ -12,7 +12,7 @@
     transform: translateX(-50%);
 }
 
-.screen-title::after {
+.menu-screen .screen-title::after {
     content: '';
     position: absolute;
     bottom: -10px;

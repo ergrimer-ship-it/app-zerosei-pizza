@@ -182,6 +182,15 @@
     margin-bottom: 0;
 }
 
+.total-disclaimer {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-secondary);
+    font-style: italic;
+    margin-top: var(--spacing-sm);
+    text-align: center;
+    line-height: 1.4;
+}
+
 .quick-order-section {
     background: white;
     border-radius: var(--radius-lg);

@@ -4,7 +4,9 @@ import { db } from '../firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { callPizzeria, getFormattedPhoneNumber } from '../services/phoneService';
 import { openWhatsApp } from '../services/whatsappService';
-import { loadCart } from '../services/cartService';
+import { loadCart, addToCart } from '../services/cartService';
+import { getOrdersByUser, getProductById } from '../services/dbService';
+import { Order } from '../types';
 import './HomeScreen.css';
 
 interface HomeButton {
@@ -107,9 +109,12 @@ function HomeScreen() {
     const navigate = useNavigate();
     const [config, setConfig] = useState<HomeConfig>(defaultConfig);
     const [loading, setLoading] = useState(true);
+    const [lastOrder, setLastOrder] = useState<Order | null>(null);
+    const [reordering, setReordering] = useState(false);
 
     useEffect(() => {
         loadConfig();
+        loadLastOrder();
     }, []);
 
     const loadConfig = async () => {
@@ -123,6 +128,62 @@ function HomeScreen() {
             console.error('Error loading home config:', error);
         }
         setLoading(false);
+    };
+
+    const loadLastOrder = async () => {
+        const userProfileStr = localStorage.getItem('user_profile');
+        if (userProfileStr) {
+            try {
+                const userProfile = JSON.parse(userProfileStr);
+                // Use profile ID if available (migliore pratica), otherwise rely on what is saved
+                // Since dbService logic uses userId field in orders, we need user.id
+                if (userProfile.id) {
+                    const orders = await getOrdersByUser(userProfile.id);
+                    if (orders && orders.length > 0) {
+                        setLastOrder(orders[0]); // First one is latest due to ordering in query
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading last order:', error);
+            }
+        }
+    };
+
+    const handleReorder = async () => {
+        if (!lastOrder) return;
+        setReordering(true);
+
+        try {
+            let currentCart = loadCart();
+            let itemsAdded = 0;
+
+            for (const item of lastOrder.items) {
+                // Fetch fresh product data to check availability and current price
+                const product = await getProductById(item.productId);
+
+                if (product && product.available) {
+                    currentCart = addToCart(
+                        currentCart,
+                        product,
+                        item.quantity,
+                        item.notes,
+                        item.modifications
+                    );
+                    itemsAdded++;
+                }
+            }
+
+            if (itemsAdded > 0) {
+                navigate('/cart');
+            } else {
+                alert('Impossibile aggiungere gli articoli. I prodotti potrebbero non essere più disponibili.');
+            }
+        } catch (error) {
+            console.error('Error reordering:', error);
+            alert('Si è verificato un errore durante il riordino.');
+        } finally {
+            setReordering(false);
+        }
     };
 
     const handleWhatsAppClick = () => {
@@ -189,6 +250,40 @@ function HomeScreen() {
                     </p>
                 </div>
             </section>
+
+            {/* Quick Re-order Section */}
+            {lastOrder && (
+                <section className="reorder-section fade-in">
+                    <div className="reorder-card">
+                        <div className="reorder-header">
+                            <h2>Tutto come al solito? 🍕</h2>
+                            <p>Ordina di nuovo il tuo ultimo ordine con un click!</p>
+                        </div>
+                        <div className="reorder-summary">
+                            <ul className="reorder-items">
+                                {lastOrder.items.slice(0, 3).map((item, idx) => (
+                                    <li key={idx}>
+                                        {item.quantity}x {item.productName}
+                                    </li>
+                                ))}
+                                {lastOrder.items.length > 3 && (
+                                    <li className="more-items">e altri {lastOrder.items.length - 3} articoli...</li>
+                                )}
+                            </ul>
+                            <div className="reorder-total">
+                                Totale precedente: €{lastOrder.total.toFixed(2)}
+                            </div>
+                        </div>
+                        <button
+                            className={`reorder-btn ${reordering ? 'loading' : ''}`}
+                            onClick={handleReorder}
+                            disabled={reordering}
+                        >
+                            {reordering ? 'Caricamento...' : 'Ordina di Nuovo 🚀'}
+                        </button>
+                    </div>
+                </section>
+            )}
 
             {/* CTA Buttons */}
             <section className="cta-section">

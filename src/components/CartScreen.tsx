@@ -11,6 +11,15 @@ import { openWhatsApp } from '../services/whatsappService';
 import { callPizzeria } from '../services/phoneService';
 import './CartScreen.css';
 
+// Styles added via replace_file_content for disclaimer
+// .total-disclaimer {
+//     font-size: 0.8rem;
+//     color: #666;
+//     font-style: italic;
+//     margin-top: 10px;
+//     text-align: center;
+// }
+
 interface CartScreenProps {
     cart: Cart;
     setCart: (cart: Cart) => void;
@@ -199,6 +208,9 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
                     <span>Totale</span>
                     <span>€{cart.total.toFixed(2)}</span>
                 </div>
+                <p className="total-disclaimer">
+                    * Il totale potrebbe subire variazioni dovute a spese di consegna, ingredienti extra o altre modifiche non calcolate dall'app.
+                </p>
             </div>
 
             <div className="quick-order-section">

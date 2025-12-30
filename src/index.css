@@ -25,11 +25,11 @@ body {
    CSS VARIABLES - DESIGN TOKENS
    ============================================ */
 :root {
-    /* Colors - Italia Theme */
-    --color-primary: #E74C3C;
-    /* Rosso */
-    --color-primary-dark: #C0392B;
-    --color-primary-light: #EC7063;
+    /* Colors - Black & Gold Theme Default */
+    --color-primary: #D4AF37;
+    /* Gold */
+    --color-primary-dark: #B4941F;
+    --color-primary-light: #F1C40F;
 
     --color-secondary: #27AE60;
     /* Verde */
@@ -40,12 +40,12 @@ body {
     /* Arancione/Oro */
     --color-accent-dark: #D68910;
 
-    --color-bg: #FFFFFF;
-    --color-bg-secondary: #F8F9FA;
-    --color-bg-tertiary: #ECF0F1;
+    --color-bg: #121212;
+    --color-bg-secondary: #1F1F1F;
+    --color-bg-tertiary: #2C2C2C;
 
-    --color-text: #2C3E50;
-    --color-text-secondary: #7F8C8D;
+    --color-text: #FFFFFF;
+    --color-text-secondary: #A0A0A0;
     --color-text-light: #95A5A6;
 
     --color-border: #E0E0E0;

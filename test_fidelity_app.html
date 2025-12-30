@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Test Fidelity Cloud Function</title>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js';
+        import { getFunctions, httpsCallable } from 'https://www.gstatic.com/firebasejs/10.13.0/firebase-functions.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBz_xz-wnL7NQVo0AESwXC6pPPLHJwU2S4",
+            authDomain: "app-zerosei-pizza.firebaseapp.com",
+            projectId: "app-zerosei-pizza",
+            storageBucket: "app-zerosei-pizza.firebasestorage.app",
+            messagingSenderId: "912128427084",
+            appId: "1:912128427084:web:6a8e9c1d8c2b4f3e5d6a7b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const functions = getFunctions(app);
+
+        async function testFunction() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Testing...';
+
+            try {
+                const searchAndSync = httpsCallable(functions, 'searchAndSyncFidelityPoints');
+                const result = await searchAndSync({
+                    email: 'grimaldi.andrea88@gmail.com',
+                    firstName: 'Andrea',
+                    lastName: 'Grimaldi'
+                });
+
+                console.log('Result:', result);
+                resultDiv.innerHTML = '<pre>' + JSON.stringify(result.data, null, 2) + '</pre>';
+
+                if (result.data.success && result.data.points === 12) {
+                    resultDiv.innerHTML += '<p style="color:green">✓ VERIFICATION PASSED: Points are 12 as expected</p>';
+                } else if (result.data.success) {
+                    resultDiv.innerHTML += '<p style="color:orange">⚠ Points found: ' + result.data.points + '</p>';
+                } else {
+                    resultDiv.innerHTML += '<p style="color:red">✗ Operation failed</p>';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = '<pre style="color:red">' + error.message + '\n' + JSON.stringify(error, null, 2) + '</pre>';
+            }
+        }
+
+        window.testFunction = testFunction;
+    </script>
+</head>
+
+<body>
+    <h1>Test Fidelity Cloud Function</h1>
+    <button onclick="testFunction()">Run Test</button>
+    <div id="result"></div>
+</body>
+
+</html>

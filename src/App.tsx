@@ -28,7 +28,7 @@ function App() {
 
     // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
-        console.log('App Version: v1.0.6 - Fidelity Instructions');
+        console.log('App Version: v1.1.0 - Batch Updates (Disclaimers & Gamification)');
         const savedCart = loadCart();
         setCart(savedCart);
 
