@@ -131,7 +131,13 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
                         </div>
                         <div className="card-body">
                             <div className="points-display">
-                                <span className="points-value">{loading ? '...' : loyaltyData?.points || 0}</span>
+                                <span className="points-value">
+                                    {loading ? (
+                                        <div className="spinner" aria-label="Caricamento punti"></div>
+                                    ) : (
+                                        loyaltyData?.points || 0
+                                    )}
+                                </span>
                                 <span className="points-label">Punti</span>
                             </div>
                         </div>
