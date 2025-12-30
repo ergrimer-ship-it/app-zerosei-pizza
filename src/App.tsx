@@ -28,6 +28,7 @@ function App() {
 
     // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
+        console.log('App Version: v1.0.1 - Profile Fix (ID Sanitize)');
         const savedCart = loadCart();
         setCart(savedCart);
 

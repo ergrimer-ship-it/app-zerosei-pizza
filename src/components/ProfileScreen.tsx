@@ -120,7 +120,9 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
             // Save to Firestore
             if (userProfile?.id) {
                 // Update existing
-                await updateUserProfile(userProfile.id, newProfile);
+                // Remove id from the data stored in the document to avoid redundancy
+                const { id, ...dataToUpdate } = newProfile;
+                await updateUserProfile(userProfile.id, dataToUpdate);
             } else {
                 // Create new
                 // Check if user with this phone already exists
@@ -130,9 +132,14 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                     newProfile.id = existingUser.id;
                     newProfile.loyaltyPoints = existingUser.loyaltyPoints;
                     newProfile.createdAt = existingUser.createdAt;
-                    await updateUserProfile(existingUser.id, newProfile);
+
+                    const { id, ...dataToUpdate } = newProfile;
+                    await updateUserProfile(existingUser.id, dataToUpdate);
                 } else {
-                    const newId = await createUserProfile(newProfile);
+                    // Create brand new
+                    // Ensure we don't pass 'id' to createUserProfile
+                    const { id, ...dataToCreate } = newProfile;
+                    const newId = await createUserProfile(dataToCreate);
                     newProfile.id = newId;
                 }
             }
