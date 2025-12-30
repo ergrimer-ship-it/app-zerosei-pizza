@@ -1,5 +1,18 @@
 .favorites-screen {
     padding-bottom: 100px;
+    width: 100%;
+    /* Ensure no overflow */
+    box-sizing: border-box;
+    /* Prevent red line leakage by covering background */
+    background-color: var(--color-bg);
+    min-height: 100vh;
+}
+
+.screen-title {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    color: var(--color-primary);
+    padding: 0 var(--spacing-md);
 }
 
 .empty-favorites {
@@ -13,9 +26,12 @@
 }
 
 .favorites-list {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: var(--spacing-md);
-    padding: var(--spacing-md);
+    padding: 0 0 var(--spacing-md) 0;
+    /* Remove horizontal padding allowing full width list */
+    width: 100%;
 }
 
 .favorite-card {
@@ -24,6 +40,18 @@
     padding: var(--spacing-md);
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--color-border);
+    width: 100%;
+    /* Ensure it respects container width */
+    max-width: 100%;
+    box-sizing: border-box;
+    /* Critical for padding calculation */
+}
+
+/* Ensure no negative margins or overflowing elements inside card */
+.favorite-header,
+.favorite-details,
+.favorite-actions {
+    max-width: 100%;
 }
 
 .favorite-header {
@@ -38,6 +66,11 @@
 .favorite-header h3 {
     margin: 0;
     color: var(--color-text);
+    /* Prevent long title overflow */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80%;
 }
 
 .remove-btn {
@@ -69,6 +102,7 @@
     display: flex;
     gap: var(--spacing-sm);
     margin-top: var(--spacing-md);
+    width: 100%;
 }
 
 .edit-fav-btn {
@@ -79,5 +113,24 @@
 .add-fav-to-cart {
     flex: 2;
     width: auto;
-    /* Override 100% */
+    font-size: var(--font-size-sm);
+    /* Adjust text size for mobile */
+}
+
+/* Mobile specific fixes */
+@media (max-width: 480px) {
+    .favorites-screen {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+
+    .favorite-actions {
+        flex-direction: column;
+        /* Stack buttons on very small screens if needed */
+    }
+
+    .add-fav-to-cart,
+    .edit-fav-btn {
+        width: 100%;
+    }
 }
