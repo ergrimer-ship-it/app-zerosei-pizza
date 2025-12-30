@@ -289,7 +289,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                         </div>
                     ) : (
                         <div className="fidelity-connect">
-                            <p>Hai già una Fidelity Card in negozio? Collegala ora per vedere i tuoi punti!</p>
+                            <p>Per collegare la tua Fidelity Card e vedere i punti, comunica alla pizzeria l'email usata nel tuo profilo app. Una volta inserita nel gestionale, premi il pulsante qui sotto.</p>
                             <button
                                 onClick={handleSyncFidelity}
                                 disabled={isSyncing}
