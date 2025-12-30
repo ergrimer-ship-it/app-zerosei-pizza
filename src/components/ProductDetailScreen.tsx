@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Product, Cart, PizzaModification } from '../types';
 import { addToCart } from '../services/cartService';
 import { openWhatsApp } from '../services/whatsappService';
-import { getProductById, addFavorite } from '../services/dbService';
+import { getProductById, addFavorite, updateFavorite } from '../services/dbService';
 import { getModifications } from '../services/modificationService';
 import './ProductDetailScreen.css';
 
@@ -15,10 +15,13 @@ interface ProductDetailScreenProps {
 function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { favoriteId, initialModifications, initialNotes } = location.state || {}; // Get edit state if present
+
     const [product, setProduct] = useState<Product | null>(null);
     const [quantity, setQuantity] = useState(1);
-    const [notes, setNotes] = useState('');
-    const [selectedModifications, setSelectedModifications] = useState<PizzaModification[]>([]);
+    const [notes, setNotes] = useState(initialNotes || '');
+    const [selectedModifications, setSelectedModifications] = useState<PizzaModification[]>(initialModifications || []);
     const [availableModifications, setAvailableModifications] = useState<PizzaModification[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -120,8 +123,14 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
                     return;
                 }
 
-                await addFavorite(userProfile.id, product, selectedModifications, notes);
-                alert('Pizza aggiunta ai tuoi Preferiti! ❤️');
+                if (favoriteId) {
+                    await updateFavorite(favoriteId, selectedModifications, notes);
+                    alert('Preferito aggiornato! ✅');
+                    navigate('/favorites'); // Return to favorites after update
+                } else {
+                    await addFavorite(userProfile.id, product, selectedModifications, notes);
+                    alert('Pizza aggiunta ai tuoi Preferiti! ❤️');
+                }
             } catch (error) {
                 console.error('Error saving favorite:', error);
                 alert('Errore durante il salvataggio nei preferiti.');
@@ -233,15 +242,16 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
                 </div>
 
                 <div className="action-buttons">
-                    <button className="btn btn-secondary save-favorite-btn" onClick={handleSaveFavorite}>
-                        ❤️ Salva nei Preferiti
-                    </button>
                     <button className="btn btn-primary add-to-cart-btn" onClick={handleAddToCart}>
                         Aggiungi al carrello - €{getTotalPrice().toFixed(2)}
                     </button>
 
                     <button className="btn btn-whatsapp order-now-btn" onClick={handleOrderNow}>
                         Ordina subito su WhatsApp
+                    </button>
+
+                    <button className="btn btn-favorite save-favorite-btn" onClick={handleSaveFavorite}>
+                        {favoriteId ? '💾 Aggiorna Preferito' : '❤️ Salva nei Preferiti'}
                     </button>
                 </div>
             </div>

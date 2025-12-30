@@ -125,12 +125,29 @@ function FavoritesScreen({ cart, setCart }: FavoritesScreenProps) {
                                 )}
                             </div>
 
-                            <button
-                                className="btn btn-primary add-fav-to-cart"
-                                onClick={(e) => handleAddToCart(item, e)}
-                            >
-                                Aggiungi al Carrello
-                            </button>
+                            <div className="favorite-actions">
+                                <button
+                                    className="btn btn-secondary edit-fav-btn"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/product/${item.product.id}`, {
+                                            state: {
+                                                favoriteId: item.id,
+                                                initialModifications: item.modifications,
+                                                initialNotes: item.notes
+                                            }
+                                        });
+                                    }}
+                                >
+                                    ✏️ Modifica
+                                </button>
+                                <button
+                                    className="btn btn-primary add-fav-to-cart"
+                                    onClick={(e) => handleAddToCart(item, e)}
+                                >
+                                    Aggiungi al Carrello
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>

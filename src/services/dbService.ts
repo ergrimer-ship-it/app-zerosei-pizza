@@ -346,6 +346,15 @@ export async function removeFavorite(id: string): Promise<void> {
     await deleteDoc(favoriteRef);
 }
 
+export async function updateFavorite(id: string, modifications: PizzaModification[], notes?: string): Promise<void> {
+    const favoriteRef = doc(db, 'favorites', id);
+    await updateDoc(favoriteRef, {
+        modifications,
+        notes,
+        updatedAt: Timestamp.now()
+    });
+}
+
 export async function getFavoritesByUser(userId: string): Promise<FavoriteItem[]> {
     const favoritesRef = collection(db, 'favorites');
     const q = query(favoritesRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));

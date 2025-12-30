@@ -212,10 +212,11 @@
 }
 
 .save-favorite-btn {
-    background-color: white;
-    color: var(--color-primary);
-    border: 2px solid var(--color-primary);
-    margin-bottom: var(--spacing-xs);
+    background-color: transparent;
+    color: var(--color-text-secondary);
+    border: 2px solid var(--color-border);
+    margin-top: var(--spacing-sm);
+    font-weight: 500;
 }
 
 @media (min-width: 768px) {
