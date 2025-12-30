@@ -75,7 +75,9 @@ function NewsOffersScreen() {
                                     className="news-image"
                                 />
                             ) : (
-                                <div className="news-icon">🎉</div>
+                                <div className="news-icon">
+                                    {promotion.type === 'news' ? '📰' : '🎉'}
+                                </div>
                             )}
                             <div className="news-content">
                                 <span className="news-date">
@@ -83,6 +85,9 @@ function NewsOffersScreen() {
                                 </span>
                                 {!isPromotionValid(promotion) && (
                                     <span className="news-badge expired">Scaduta</span>
+                                )}
+                                {promotion.type === 'news' && (
+                                    <span className="news-badge info" style={{ backgroundColor: '#2196F3', color: 'white' }}>Novità</span>
                                 )}
                                 <h3>{promotion.title}</h3>
                                 <p>{promotion.description}</p>

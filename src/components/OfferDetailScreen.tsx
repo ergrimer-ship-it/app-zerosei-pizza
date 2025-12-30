@@ -57,13 +57,14 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     validTo: data.validTo?.toDate() || new Date(),
                     active: data.active,
                     showAsPopup: data.showAsPopup,
+                    type: data.type || 'promotion', // Add type
                     createdAt: data.createdAt?.toDate() || new Date(),
                     updatedAt: data.updatedAt?.toDate() || new Date(),
                 };
                 setOffer(loadedOffer);
 
-                // Verifica se utente ha già un coupon per questa offerta
-                if (userProfile) {
+                // Verifica se utente ha già un coupon per questa offerta (SOLO se è una promozione)
+                if (userProfile && loadedOffer.type === 'promotion') {
                     const couponFound = await checkOfferAlreadyActivated(userProfile.id, docSnap.id);
                     if (couponFound) {
                         setExistingCoupon(couponFound);
@@ -213,21 +214,6 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
         });
     };
 
-    if (!userProfile) {
-        return (
-            <div className="offer-detail-screen fade-in">
-                <div className="login-prompt">
-                    <span className="lock-icon">🔒</span>
-                    <h2>Accedi per attivare le offerte</h2>
-                    <p>Crea un profilo per ricevere codici sconto esclusivi!</p>
-                    <button className="btn btn-primary" onClick={() => navigate('/profile')}>
-                        Crea Profilo
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
     if (loading) {
         return (
             <div className="offer-detail-screen fade-in">
@@ -253,12 +239,33 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
     if (!offer) return null;
 
+    // Se è una promozione e l'utente non è loggato, richiedi login
+    if (!userProfile && offer.type === 'promotion') {
+        return (
+            <div className="offer-detail-screen fade-in">
+                <div className="login-prompt">
+                    <span className="lock-icon">🔒</span>
+                    <h2>Accedi per attivare le offerte</h2>
+                    <p>Crea un profilo per ricevere codici sconto esclusivi!</p>
+                    <button className="btn btn-primary" onClick={() => navigate('/profile')}>
+                        Crea Profilo
+                    </button>
+                    <button className="btn btn-text" style={{ marginTop: '10px' }} onClick={() => navigate('/news')}>
+                        Torna indietro
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+
     const isValid = new Date() >= new Date(offer.validFrom) && new Date() <= new Date(offer.validTo);
+    const isNews = offer.type === 'news';
 
     return (
         <div className="offer-detail-screen fade-in">
             <button className="back-button" onClick={() => navigate('/news')}>
-                ← Torna alle offerte
+                ← Torna {isNews ? 'alle novità' : 'alle offerte'}
             </button>
 
             <div className="offer-detail-card">
@@ -270,76 +277,90 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     <h1 className="offer-title">{offer.title}</h1>
 
                     <div className="offer-validity">
-                        <span className={`validity-badge ${isValid ? 'valid' : 'expired'}`}>
-                            {isValid ? '✓ Offerta Valida' : '✗ Offerta Scaduta'}
-                        </span>
+                        {isNews ? (
+                            <span className="validity-badge info">
+                                ℹ️ Novità
+                            </span>
+                        ) : (
+                            <span className={`validity-badge ${isValid ? 'valid' : 'expired'}`}>
+                                {isValid ? '✓ Offerta Valida' : '✗ Offerta Scaduta'}
+                            </span>
+                        )}
+
                         <p className="validity-dates">
-                            Dal {formatDate(offer.validFrom)} al {formatDate(offer.validTo)}
+                            {isNews ? 'Pubblicato il: ' : 'Dal '}
+                            {formatDate(offer.validFrom)}
+                            {!isNews && ` al ${formatDate(offer.validTo)}`}
                         </p>
                     </div>
 
                     <p className="offer-description">{offer.description}</p>
 
-                    {/* Offerta già utilizzata */}
-                    {existingCoupon && existingCoupon.status === 'redeemed' && (
-                        <div className="alert alert-warning">
-                            <strong>✓ Offerta già utilizzata</strong>
-                            <p>Hai già riscattato questa offerta. Non puoi riattivarla.</p>
-                        </div>
-                    )}
-
-                    {/* Codice attivo (esistente o appena generato) */}
-                    {generatedCode && (!existingCoupon || existingCoupon.status === 'active') && (
-                        <div className="coupon-generated">
-                            <div className="coupon-box">
-                                <h2>🎉 Offerta Attivata!</h2>
-                                <div className="coupon-code">
-                                    <span className="code-label">Il tuo codice è:</span>
-                                    <span className="code-value">{generatedCode}</span>
-                                </div>
-                                <p className="coupon-instructions">
-                                    📱 <strong>Mostra questo codice in cassa</strong> per ricevere lo sconto
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Pulsante attivazione - solo se non già attivata e valida */}
-                    {!existingCoupon && isValid && (
-                        <div className="activation-section">
-                            {dailyLimitReached && (
-                                <div className="alert alert-error">
-                                    🚫 <strong>Limite raggiunto!</strong><br />
-                                    Hai già attivato un'offerta oggi. Torna domani per attivarne un'altra!
+                    {/* SEZIONE COUPON - SOLO PER PROMOZIONI */}
+                    {!isNews && (
+                        <>
+                            {/* Offerta già utilizzata */}
+                            {existingCoupon && existingCoupon.status === 'redeemed' && (
+                                <div className="alert alert-warning">
+                                    <strong>✓ Offerta già utilizzata</strong>
+                                    <p>Hai già riscattato questa offerta. Non puoi riattivarla.</p>
                                 </div>
                             )}
 
-                            {error && !dailyLimitReached && (
-                                <div className="alert alert-error">
-                                    {error}
+                            {/* Codice attivo (esistente o appena generato) */}
+                            {generatedCode && (!existingCoupon || existingCoupon.status === 'active') && (
+                                <div className="coupon-generated">
+                                    <div className="coupon-box">
+                                        <h2>🎉 Offerta Attivata!</h2>
+                                        <div className="coupon-code">
+                                            <span className="code-label">Il tuo codice è:</span>
+                                            <span className="code-value">{generatedCode}</span>
+                                        </div>
+                                        <p className="coupon-instructions">
+                                            📱 <strong>Mostra questo codice in cassa</strong> per ricevere lo sconto
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 
-                            <button
-                                className="btn btn-primary btn-large"
-                                onClick={handleActivateOffer}
-                                disabled={activating || dailyLimitReached}
-                            >
-                                {activating ? 'Attivazione in corso...' : '🎫 ATTIVA QUESTA OFFERTA'}
-                            </button>
+                            {/* Pulsante attivazione - solo se non già attivata e valida */}
+                            {!existingCoupon && isValid && (
+                                <div className="activation-section">
+                                    {dailyLimitReached && (
+                                        <div className="alert alert-error">
+                                            🚫 <strong>Limite raggiunto!</strong><br />
+                                            Hai già attivato un'offerta oggi. Torna domani per attivarne un'altra!
+                                        </div>
+                                    )}
 
-                            {!dailyLimitReached && (
-                                <p className="help-text">
-                                    Attiva l'offerta per ricevere il tuo codice sconto personale
-                                </p>
+                                    {error && !dailyLimitReached && (
+                                        <div className="alert alert-error">
+                                            {error}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        className="btn btn-primary btn-large"
+                                        onClick={handleActivateOffer}
+                                        disabled={activating || dailyLimitReached}
+                                    >
+                                        {activating ? 'Attivazione in corso...' : '🎫 ATTIVA QUESTA OFFERTA'}
+                                    </button>
+
+                                    {!dailyLimitReached && (
+                                        <p className="help-text">
+                                            Attiva l'offerta per ricevere il tuo codice sconto personale
+                                        </p>
+                                    )}
+                                </div>
                             )}
-                        </div>
-                    )}
 
-                    {!isValid && (
-                        <div className="alert alert-warning">
-                            Questa offerta non è più valida
-                        </div>
+                            {!isValid && (
+                                <div className="alert alert-warning">
+                                    Questa offerta non è più valida
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>
