@@ -149,6 +149,7 @@ export interface NewsPromotion {
     validTo: Date;
     active: boolean;
     showAsPopup?: boolean;
+    type?: 'promotion' | 'news'; // New field to distinguish between promotions and news
     createdAt: Date;
     updatedAt: Date;
 }

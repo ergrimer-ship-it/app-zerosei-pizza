@@ -13,7 +13,11 @@ interface PromotionFormData {
     showAsPopup: boolean;
 }
 
-function PromotionManagement() {
+interface PromotionManagementProps {
+    mode?: 'promotion' | 'news'; // Optional mode, default to 'promotion' if not specified
+}
+
+function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
     const [promotions, setPromotions] = useState<NewsPromotion[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
@@ -31,16 +35,18 @@ function PromotionManagement() {
 
     useEffect(() => {
         loadPromotions();
-    }, []);
+    }, [mode]);
 
     const loadPromotions = async () => {
         setLoading(true);
         try {
             const data = await getAllPromotions();
-            setPromotions(data);
+            // Filter by type. If item has no type, assume 'promotion' for backward compatibility
+            const filtered = data.filter(p => (p.type || 'promotion') === mode);
+            setPromotions(filtered);
         } catch (error) {
-            console.error('Error loading promotions:', error);
-            alert('Errore nel caricamento delle promozioni');
+            console.error('Error loading items:', error);
+            alert('Errore nel caricamento');
         }
         setLoading(false);
     };
@@ -48,18 +54,23 @@ function PromotionManagement() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const dataToSave = {
+                ...formData,
+                type: mode, // Force the current mode
+            };
+
             if (editingPromotion) {
-                await updatePromotion(editingPromotion.id, formData);
-                alert('Promozione aggiornata con successo!');
+                await updatePromotion(editingPromotion.id, dataToSave);
+                alert(`${mode === 'news' ? 'Novità' : 'Promozione'} aggiornata con successo!`);
             } else {
-                await createPromotion(formData);
-                alert('Promozione creata con successo!');
+                await createPromotion(dataToSave);
+                alert(`${mode === 'news' ? 'Novità' : 'Promozione'} creata con successo!`);
             }
             resetForm();
             loadPromotions();
         } catch (error) {
-            console.error('Error saving promotion:', error);
-            alert('Errore nel salvataggio della promozione');
+            console.error('Error saving item:', error);
+            alert('Errore nel salvataggio');
         }
     };
 
@@ -83,11 +94,11 @@ function PromotionManagement() {
         }
         try {
             await deletePromotion(promotion.id);
-            alert('Promozione eliminata con successo!');
+            alert('Elemento eliminato con successo!');
             loadPromotions();
         } catch (error) {
-            console.error('Error deleting promotion:', error);
-            alert('Errore nell\'eliminazione della promozione');
+            console.error('Error deleting item:', error);
+            alert('Errore nell\'eliminazione');
         }
     };
 
@@ -122,24 +133,26 @@ function PromotionManagement() {
     };
 
     if (loading) {
-        return <div className="loading">Caricamento promozioni...</div>;
+        return <div className="loading">Caricamento...</div>;
     }
+
+    const itemLabel = mode === 'news' ? 'Novità' : 'Promozione';
 
     return (
         <div className="promotion-management">
             <div className="pm-header">
-                <h2>Gestione Promozioni e News</h2>
+                <h2>Gestione {mode === 'news' ? 'Novità' : 'Promozioni'}</h2>
                 <button
                     className="btn btn-primary"
                     onClick={() => setShowForm(!showForm)}
                 >
-                    {showForm ? '✕ Chiudi' : '+ Nuova Promozione'}
+                    {showForm ? '✕ Chiudi' : `+ Nuova ${itemLabel}`}
                 </button>
             </div>
 
             {showForm && (
                 <div className="promotion-form-container">
-                    <h3>{editingPromotion ? 'Modifica Promozione' : 'Nuova Promozione'}</h3>
+                    <h3>{editingPromotion ? `Modifica ${itemLabel}` : `Nuova ${itemLabel}`}</h3>
                     <form onSubmit={handleSubmit} className="promotion-form">
                         <div className="form-group">
                             <label>Titolo *</label>
@@ -242,13 +255,13 @@ function PromotionManagement() {
                                     />{' '}Mostra come Popup
                                 </label>
                                 <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>
-                                    La promozione apparirà come popup all'apertura dell'app
+                                    {mode === 'news' ? 'La novità' : 'La promozione'} apparirà come popup all'apertura dell'app
                                 </small>
                             </div>
                         </div>
                         <div className="form-actions">
                             <button type="submit" className="btn btn-primary">
-                                {editingPromotion ? 'Aggiorna' : 'Crea'} Promozione
+                                {editingPromotion ? 'Aggiorna' : 'Crea'} {itemLabel}
                             </button>
                             <button type="button" className="btn btn-outline" onClick={resetForm}>
                                 Annulla
@@ -307,7 +320,7 @@ function PromotionManagement() {
                 </table>
                 {promotions.length === 0 && (
                     <div className="empty-state">
-                        <p>Nessuna promozione trovata</p>
+                        <p>Nessuna {mode === 'news' ? 'novità' : 'promozione'} trovata</p>
                     </div>
                 )}
             </div>

@@ -19,6 +19,12 @@ service firebase.storage {
       allow read: if true;
       allow write: if true; // Anyone can upload (temporary - should be authenticated admins only)
     }
+
+    // Allow upload of promotion images
+    match /promotion_images/{imageId} {
+      allow read: if true;
+      allow write: if true;
+    }
     
     // Deny all other paths by default
     match /{allPaths=**} {

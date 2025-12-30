@@ -37,7 +37,9 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             case 'categories':
                 return <CategoryManagement />;
             case 'promotions':
-                return <PromotionManagement />;
+                return <PromotionManagement mode="promotion" />;
+            case 'news':
+                return <PromotionManagement mode="news" />;
             case 'fidelity':
                 return <FidelityRewardsManagement />;
             case 'coupon-validation':
@@ -87,6 +89,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         onClick={() => setActiveTab('promotions')}
                     >
                         {theme?.iconPromotions || '📢'} Promozioni
+                    </button>
+                    <button
+                        className={`nav-item ${activeTab === 'news' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('news')}
+                    >
+                        📰 Novità
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'fidelity' ? 'active' : ''}`}
