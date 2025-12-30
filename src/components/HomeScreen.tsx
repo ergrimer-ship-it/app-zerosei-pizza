@@ -126,7 +126,22 @@ function HomeScreen() {
             const docRef = doc(db, 'config', 'home');
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
-                setConfig({ ...defaultConfig, ...docSnap.data() as HomeConfig });
+                const remoteData = docSnap.data() as HomeConfig;
+                let mergedButtons = remoteData.buttons || defaultConfig.buttons;
+
+                // Ensure 'favorites' button exists if missing (new feature fallback)
+                const favoritesBtn = defaultConfig.buttons.find(b => b.id === 'favorites');
+                if (favoritesBtn && !mergedButtons.find(b => b.id === 'favorites')) {
+                    mergedButtons.push(favoritesBtn);
+                }
+
+                // Ensure 'menu' button exists (critical)
+                const menuBtn = defaultConfig.buttons.find(b => b.id === 'menu');
+                if (menuBtn && !mergedButtons.find(b => b.id === 'menu')) {
+                    mergedButtons.push(menuBtn);
+                }
+
+                setConfig({ ...defaultConfig, ...remoteData, buttons: mergedButtons });
             }
         } catch (error) {
             console.error('Error loading home config:', error);
