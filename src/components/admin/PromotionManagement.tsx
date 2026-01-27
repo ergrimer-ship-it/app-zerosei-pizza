@@ -22,6 +22,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingPromotion, setEditingPromotion] = useState<NewsPromotion | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
 
     const [formData, setFormData] = useState<PromotionFormData>({
         title: '',
@@ -53,6 +54,12 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isUploading) {
+            alert("Attendi il completamento del caricamento dell'immagine.");
+            return;
+        }
+
         try {
             const dataToSave = {
                 ...formData,
@@ -103,6 +110,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
     };
 
     const resetForm = () => {
+        setIsUploading(false);
         setFormData({
             title: '',
             description: '',
@@ -185,17 +193,20 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                                     <input
                                         type="file"
                                         accept="image/*"
+                                        disabled={isUploading}
                                         onChange={async (e) => {
                                             const file = e.target.files?.[0];
                                             if (!file) return;
 
+                                            setIsUploading(true);
                                             try {
-                                                // Show loading indicator locally if needed, or just rely on async
                                                 const url = await uploadPromotionImage(file);
                                                 setFormData(prev => ({ ...prev, imageUrl: url }));
                                             } catch (error) {
                                                 console.error('Error uploading image:', error);
                                                 alert('Errore nel caricamento dell\'immagine');
+                                            } finally {
+                                                setIsUploading(false);
                                             }
                                         }}
                                         style={{ marginTop: '8px' }}
@@ -204,7 +215,8 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                                         Carica un'immagine dal tuo dispositivo (JPG, PNG)
                                     </small>
                                 </div>
-                                {formData.imageUrl && (
+                                {isUploading && <div style={{ color: '#D4AF37', marginTop: '5px' }}>⏳ Caricamento immagine in corso... attendere...</div>}
+                                {formData.imageUrl && !isUploading && (
                                     <div className="image-preview" style={{ marginTop: '10px' }}>
                                         <img
                                             src={formData.imageUrl}
@@ -260,8 +272,8 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                             </div>
                         </div>
                         <div className="form-actions">
-                            <button type="submit" className="btn btn-primary">
-                                {editingPromotion ? 'Aggiorna' : 'Crea'} {itemLabel}
+                            <button type="submit" className="btn btn-primary" disabled={isUploading}>
+                                {isUploading ? 'Attendere...' : (editingPromotion ? 'Aggiorna' : 'Crea')} {itemLabel}
                             </button>
                             <button type="button" className="btn btn-outline" onClick={resetForm}>
                                 Annulla
