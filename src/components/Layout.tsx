@@ -109,13 +109,13 @@ function Layout({ children, cart }: LayoutProps) {
 
                 <div className="sidebar-footer">
                     <div className="social-links">
-                        <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="social-link">
+                        <a href="https://www.instagram.com/zeroseilapizza/?hl=it" target="_blank" rel="noopener noreferrer" className="social-link">
                             📷 Instagram
                         </a>
-                        <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="social-link">
+                        <a href="https://www.facebook.com/pizzeriazerosei/?locale=it_IT" target="_blank" rel="noopener noreferrer" className="social-link">
                             📘 Facebook
                         </a>
-                        <a href="https://zerosei.it" target="_blank" rel="noopener noreferrer" className="social-link">
+                        <a href="https://www.zeroseilapizzadasporto.it/" target="_blank" rel="noopener noreferrer" className="social-link">
                             🌐 Sito Web
                         </a>
                     </div>
