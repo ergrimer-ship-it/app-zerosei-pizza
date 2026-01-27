@@ -6,7 +6,7 @@ import './OrderManagement.css';
 function OrderManagement() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+    // const [filter, setFilter] = useState<OrderStatus | 'all'>('all'); // Removed
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     useEffect(() => {
@@ -74,11 +74,12 @@ function OrderManagement() {
         }
     };
 
-    const filteredOrders = filter === 'all'
-        ? orders
-        : orders.filter(o => o.status === filter);
+    // const filteredOrders = filter === 'all'
+    //    ? orders
+    //    : orders.filter(o => o.status === filter);
 
-    // Statistics
+    // const [filter, setFilter] = useState<OrderStatus | 'all'>('all'); // Removed filter state
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -142,27 +143,11 @@ function OrderManagement() {
 
             <div className="om-content">
                 <div className="orders-list-container">
-                    <div className="filters">
-                        <select
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value as OrderStatus | 'all')}
-                            className="status-filter"
-                        >
-                            <option value="all">Tutti gli stati</option>
-                            <option value="pending">In Attesa</option>
-                            <option value="confirmed">Confermati</option>
-                            <option value="preparing">In Preparazione</option>
-                            <option value="ready">Pronti</option>
-                            <option value="delivered">Consegnati</option>
-                            <option value="cancelled">Annullati</option>
-                        </select>
-                    </div>
-
                     <div className="orders-list">
-                        {filteredOrders.length === 0 ? (
+                        {orders.length === 0 ? (
                             <div className="empty-state">Nessun ordine trovato</div>
                         ) : (
-                            filteredOrders.map(order => (
+                            orders.map(order => (
                                 <div
                                     key={order.id}
                                     className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}
