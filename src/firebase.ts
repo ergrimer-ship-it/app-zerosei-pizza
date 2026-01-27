@@ -6,12 +6,12 @@ import { getFunctions } from 'firebase/functions';
 
 // Firebase configuration for ZeroSei Pizza App
 const firebaseConfig = {
-    apiKey: "AIzaSyDf7bTYBUCJiVj8L-7nKxuWU8ueGdXc1W0",
-    authDomain: "app-zerosei-pizza.firebaseapp.com",
-    projectId: "app-zerosei-pizza",
-    storageBucket: "app-zerosei-pizza.firebasestorage.app",
-    messagingSenderId: "912128427084",
-    appId: "1:912128427084:web:9f99ba64f9bd2c97f520e9"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
