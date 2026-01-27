@@ -21,7 +21,7 @@ service firebase.storage {
     }
 
     // Allow upload of promotion images
-    match /promotion_images/{imageId} {
+    match /promotion_images/{allPaths=**} {
       allow read: if true;
       allow write: if true;
     }
