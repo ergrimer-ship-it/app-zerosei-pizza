@@ -4,11 +4,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    base: '/app-zerosei-pizza/',
+    // base removed for Firebase Hosting
     plugins: [
         react(),
         VitePWA({
-            registerType: 'autoUpdate',
+            registerType: 'prompt', // Changed from autoUpdate for better UX
             includeAssets: ['favicon.ico', 'icons/*.svg', 'icons/*.png'],
             manifest: {
                 name: 'ZeroSei Pizza',

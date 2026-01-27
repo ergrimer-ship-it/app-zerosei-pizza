@@ -18,6 +18,7 @@ import { loadCart } from './services/cartService';
 import { updateUserProfile } from './services/dbService';
 import { useTheme } from './hooks/useTheme';
 import DebugProducts from './components/DebugProducts';
+import UpdatePrompt from './components/UpdatePrompt';
 
 function App() {
     const [cart, setCart] = useState<Cart>({ items: [], total: 0 });
@@ -62,6 +63,7 @@ function App() {
 
     return (
         <Router>
+            <UpdatePrompt />
             <Routes>
                 {/* Admin Routes */}
                 <Route
