@@ -324,13 +324,25 @@ export async function deletePromotion(id: string): Promise<void> {
 }
 
 export async function uploadPromotionImage(file: File): Promise<string> {
-    const storage = getStorage();
-    const timestamp = Date.now();
-    const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
-    const storageRef = ref(storage, `promotion_images/${timestamp}_${safeName}`);
-    const snapshot = await uploadBytes(storageRef, file);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+    console.log('Starting upload for:', file.name);
+    try {
+        const storage = getStorage();
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9.]/g, '_');
+        const finalPath = `promotion_images/${timestamp}_${safeName}`;
+        console.log('Upload path:', finalPath);
+
+        const storageRef = ref(storage, finalPath);
+        const snapshot = await uploadBytes(storageRef, file);
+        console.log('Upload complete, getting URL...');
+
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        console.log('Got URL:', downloadURL);
+        return downloadURL;
+    } catch (error) {
+        console.error('Detailed upload error:', error);
+        throw error;
+    }
 }
 
 
