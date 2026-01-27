@@ -268,7 +268,7 @@ function HomeScreen() {
                 <h3>Seguici sui social</h3>
                 <div className="social-buttons">
                     <a
-                        href="https://instagram.com"
+                        href="https://www.instagram.com/zeroseilapizza/?hl=it"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-btn instagram"
@@ -276,7 +276,7 @@ function HomeScreen() {
                         📷 Instagram
                     </a>
                     <a
-                        href="https://facebook.com"
+                        href="https://www.facebook.com/pizzeriazerosei/?locale=it_IT"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-btn facebook"
@@ -284,7 +284,7 @@ function HomeScreen() {
                         📘 Facebook
                     </a>
                     <a
-                        href="https://www.zeroseilapizzadasporto.it"
+                        href="https://www.zeroseilapizzadasporto.it/"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="social-btn website"
