@@ -16,7 +16,7 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { favoriteId, initialModifications, initialNotes } = location.state || {}; // Get edit state if present
+    const { favoriteId, initialModifications, initialNotes, productIds } = location.state || {}; // Get edit state if present
 
     const [product, setProduct] = useState<Product | null>(null);
     const [quantity, setQuantity] = useState(1);
@@ -25,7 +25,57 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
     const [availableModifications, setAvailableModifications] = useState<PizzaModification[]>([]);
     const [loading, setLoading] = useState(true);
 
+    // Swipe state
+    const [touchStart, setTouchStart] = useState<number | null>(null);
+    const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+    // Minimum swipe distance (in px) 
+    const minSwipeDistance = 50;
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null); // otherwise the swipe is fired even with usual touch events
+        setTouchStart(e.targetTouches[0].clientX);
+    };
+
+    const onTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd(e.targetTouches[0].clientX);
+    };
+
+    const onTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const distance = touchStart - touchEnd;
+        const isLeftSwipe = distance > minSwipeDistance;
+        const isRightSwipe = distance < -minSwipeDistance;
+
+        if (isLeftSwipe || isRightSwipe) {
+            handleSwipe(isLeftSwipe ? 'next' : 'prev');
+        }
+    };
+
+    const handleSwipe = (direction: 'next' | 'prev') => {
+        if (!productIds || !id) return;
+
+        const currentIndex = productIds.indexOf(id);
+        if (currentIndex === -1) return;
+
+        let nextIndex;
+        if (direction === 'next') {
+            nextIndex = currentIndex + 1;
+            if (nextIndex >= productIds.length) return; // End of list
+        } else {
+            nextIndex = currentIndex - 1;
+            if (nextIndex < 0) return; // Start of list
+        }
+
+        const nextId = productIds[nextIndex];
+        navigate(`/product/${nextId}`, {
+            state: { ...location.state } // Preserve state (productIds list)
+        });
+    };
+
     useEffect(() => {
+        window.scrollTo(0, 0); // Scroll to top when product changes
         loadProduct();
         loadAvailableModifications();
     }, [id]);
@@ -151,7 +201,12 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
     const displayImage = getDisplayImage();
 
     return (
-        <div className="product-detail-screen fade-in">
+        <div
+            className="product-detail-screen fade-in"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
             <button className="back-btn-floating" onClick={() => navigate(-1)}>
                 ←
             </button>
