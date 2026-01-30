@@ -207,7 +207,14 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
         >
-            <button className="back-btn-floating" onClick={() => navigate(-1)}>
+            <button className="back-btn-floating" onClick={() => {
+                const { fromCategory } = location.state || {};
+                if (fromCategory) {
+                    navigate(`/menu/${fromCategory}`);
+                } else {
+                    navigate(-1);
+                }
+            }}>
                 ←
             </button>
 
