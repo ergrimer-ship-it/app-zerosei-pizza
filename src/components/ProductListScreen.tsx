@@ -114,7 +114,12 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
                             <div
                                 key={product.id}
                                 className="product-card"
-                                onClick={() => navigate(`/product/${product.id}`)}
+                                onClick={() => navigate(`/product/${product.id}`, {
+                                    state: {
+                                        productIds: filteredProducts.map(p => p.id),
+                                        fromCategory: category
+                                    }
+                                })}
                             >
                                 {displayImage && (
                                     <div className="product-list-image-container">
