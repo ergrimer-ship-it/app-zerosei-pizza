@@ -4,6 +4,11 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { LoyaltyReward } from '../../types';
 import './FidelityRewardsManagement.css';
 
+interface HowItWorksSection {
+    title: string;
+    description: string;
+}
+
 interface RewardFormData {
     name: string;
     description: string;
@@ -50,8 +55,14 @@ function FidelityRewardsManagement() {
         imageUrl: '🎁'
     });
 
+    // How It Works state
+    const [howItWorks, setHowItWorks] = useState<HowItWorksSection[]>([]);
+    const [savingHIW, setSavingHIW] = useState(false);
+    const [newSection, setNewSection] = useState<HowItWorksSection>({ title: '', description: '' });
+
     useEffect(() => {
         loadRewards();
+        loadHowItWorks();
     }, []);
 
     const loadRewards = async () => {
@@ -73,6 +84,63 @@ function FidelityRewardsManagement() {
             setRewards(defaultRewards);
         }
         setLoading(false);
+    };
+
+    const loadHowItWorks = async () => {
+        try {
+            const docRef = doc(db, 'config', 'fidelity');
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setHowItWorks(docSnap.data().howItWorks || []);
+            }
+        } catch (error) {
+            console.error('Error loading howItWorks:', error);
+        }
+    };
+
+    const saveHowItWorks = async (sections: HowItWorksSection[]) => {
+        setSavingHIW(true);
+        try {
+            await setDoc(doc(db, 'config', 'fidelity'), {
+                howItWorks: sections,
+                updatedAt: new Date()
+            }, { merge: true });
+            setHowItWorks(sections);
+            alert('✅ Sezione "Come Funziona" salvata!');
+        } catch (error) {
+            console.error('Error saving howItWorks:', error);
+            alert('❌ Errore nel salvataggio');
+        }
+        setSavingHIW(false);
+    };
+
+    const handleAddSection = () => {
+        if (!newSection.title && !newSection.description) {
+            alert('Inserisci almeno un titolo o una descrizione');
+            return;
+        }
+        saveHowItWorks([...howItWorks, newSection]);
+        setNewSection({ title: '', description: '' });
+    };
+
+    const handleDeleteSection = (index: number) => {
+        if (confirm('Eliminare questa sezione?')) {
+            saveHowItWorks(howItWorks.filter((_, i) => i !== index));
+        }
+    };
+
+    const handleMoveSectionUp = (index: number) => {
+        if (index === 0) return;
+        const updated = [...howItWorks];
+        [updated[index - 1], updated[index]] = [updated[index], updated[index - 1]];
+        saveHowItWorks(updated);
+    };
+
+    const handleMoveSectionDown = (index: number) => {
+        if (index === howItWorks.length - 1) return;
+        const updated = [...howItWorks];
+        [updated[index], updated[index + 1]] = [updated[index + 1], updated[index]];
+        saveHowItWorks(updated);
     };
 
     const saveRewards = async (updatedRewards: LoyaltyReward[]) => {
@@ -310,6 +378,63 @@ function FidelityRewardsManagement() {
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* ---- SEZIONE COME FUNZIONA ---- */}
+            <div className="rewards-form" style={{ marginTop: '32px' }}>
+                <h3>📖 Come Funziona — Testo informativo</h3>
+                <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '16px' }}>
+                    Questo testo appare in fondo alla Fidelity Card dell'utente. Puoi aggiungere più sezioni con titolo e descrizione.
+                </p>
+
+                {/* Sezioni esistenti */}
+                {howItWorks.map((section, index) => (
+                    <div key={index} style={{
+                        background: '#f8f8f8', borderRadius: '8px', padding: '12px 16px',
+                        marginBottom: '10px', display: 'flex', alignItems: 'flex-start', gap: '10px'
+                    }}>
+                        <div style={{ flex: 1 }}>
+                            {section.title && <strong style={{ display: 'block', marginBottom: '4px' }}>{section.title}</strong>}
+                            {section.description && <span style={{ fontSize: '0.9rem', color: '#555' }}>{section.description}</span>}
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                            <button onClick={() => handleMoveSectionUp(index)} className="btn-icon" disabled={index === 0} title="Su">⬆️</button>
+                            <button onClick={() => handleMoveSectionDown(index)} className="btn-icon" disabled={index === howItWorks.length - 1} title="Giù">⬇️</button>
+                            <button onClick={() => handleDeleteSection(index)} className="btn-icon btn-danger" title="Elimina">🗑️</button>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Nuova sezione */}
+                <div style={{ marginTop: '16px' }}>
+                    <h4 style={{ marginBottom: '10px', fontWeight: 600 }}>➕ Nuova sezione</h4>
+                    <div className="form-group">
+                        <label>Titolo</label>
+                        <input
+                            type="text"
+                            placeholder="Es: Come si guadagnano i punti"
+                            value={newSection.title}
+                            onChange={e => setNewSection({ ...newSection, title: e.target.value })}
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Descrizione</label>
+                        <textarea
+                            rows={3}
+                            placeholder="Es: Ogni volta che ordini, guadagni punti che puoi usare per ricevere premi..."
+                            value={newSection.description}
+                            onChange={e => setNewSection({ ...newSection, description: e.target.value })}
+                            style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+                        />
+                    </div>
+                    <button
+                        onClick={handleAddSection}
+                        className="btn btn-primary"
+                        disabled={savingHIW}
+                    >
+                        {savingHIW ? 'Salvataggio...' : '💾 Aggiungi e Salva'}
+                    </button>
+                </div>
             </div>
         </div>
     );

@@ -16,9 +16,11 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
     const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingRewards, setLoadingRewards] = useState(true);
+    const [howItWorks, setHowItWorks] = useState<{ title: string; description: string }[]>([]);
 
     useEffect(() => {
         loadRewards();
+        loadHowItWorks();
     }, []);
 
     useEffect(() => {
@@ -100,6 +102,18 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
             setRewards([]);
         }
         setLoadingRewards(false);
+    };
+
+    const loadHowItWorks = async () => {
+        try {
+            const docRef = doc(db, 'config', 'fidelity');
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setHowItWorks(docSnap.data().howItWorks || []);
+            }
+        } catch (error) {
+            console.error('Error loading howItWorks:', error);
+        }
     };
 
     if (!userProfile) {
@@ -222,9 +236,16 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
 
 
 
-            <div className="info-box mt-xl">
-                <p>I punti vengono aggiornati automaticamente dopo ogni acquisto in cassa.</p>
-            </div>
+            {howItWorks.length > 0 && (
+                <div className="info-box mt-xl">
+                    {howItWorks.map((section, i) => (
+                        <div key={i} style={{ marginBottom: i < howItWorks.length - 1 ? '16px' : 0 }}>
+                            {section.title && <h3 style={{ marginBottom: '6px', fontSize: '1rem' }}>{section.title}</h3>}
+                            {section.description && <p style={{ margin: 0, lineHeight: 1.6 }}>{section.description}</p>}
+                        </div>
+                    ))}
+                </div>
+            )}
         </div >
     );
 }
