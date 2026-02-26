@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="it">
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./admin-manifest.webmanifest">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1a1a2e" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ZeroSei Admin" />
+
+    <title>ZeroSei Admin - Pannello Gestione</title>
+
+    <!-- Redirect immediato all'app principale sul percorso admin -->
+    <script>
+        // Salva il fatto che vogliamo andare all'admin
+        // e reindirizza all'app principale (index.html) che gestirà il routing
+        window.location.replace('/#/admin/login');
+    </script>
+</head>
+
+<body>
+    <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: #1a1a2e;
+        color: white;
+        font-family: sans-serif;
+        font-size: 1.2rem;
+    ">
+        Caricamento pannello admin...
+    </div>
+</body>
+
+</html>
