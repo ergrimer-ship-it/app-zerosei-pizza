@@ -12,6 +12,15 @@ function CouponValidation() {
         details?: string;
     } | null>(null);
 
+    const speak = (text: string) => {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel(); // ferma eventuali voci precedenti
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'it-IT';
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+    };
+
     const handleValidate = async () => {
         if (!code.trim()) {
             setMessage({
@@ -40,6 +49,7 @@ function CouponValidation() {
                     text: '❌ Codice Inesistente',
                     details: `Il codice "${searchCode}" non è stato trovato nel sistema.`,
                 });
+                speak('Codice non trovato');
                 setValidating(false);
                 return;
             }
@@ -66,6 +76,7 @@ function CouponValidation() {
                     text: '⚠️ ATTENZIONE: Codice già utilizzato in precedenza!',
                     details: `Questo codice è stato già riscattato il ${dateStr}`,
                 });
+                speak(`Attenzione: codice già utilizzato per ${couponData.offerTitle}`);
                 setValidating(false);
                 return;
             }
@@ -108,6 +119,7 @@ function CouponValidation() {
                 text: '✅ CODICE VALIDO!',
                 details: `Sconto Autorizzato per: ${couponData.offerTitle}`,
             });
+            speak(`Codice valido! Sconto autorizzato per: ${couponData.offerTitle}`);
 
             // Pulisci il campo dopo 3 secondi
             setTimeout(() => {
