@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { db } from '../../firebase';
-import { collection, query, where, getDocs, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, serverTimestamp, getDoc } from 'firebase/firestore';
 import './CouponValidation.css';
 
 function CouponValidation() {
@@ -11,6 +11,15 @@ function CouponValidation() {
         text: string;
         details?: string;
     } | null>(null);
+
+    const speak = (text: string) => {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel(); // ferma eventuali voci precedenti
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'it-IT';
+        utterance.rate = 0.95;
+        window.speechSynthesis.speak(utterance);
+    };
 
     const handleValidate = async () => {
         if (!code.trim()) {
@@ -40,6 +49,7 @@ function CouponValidation() {
                     text: '❌ Codice Inesistente',
                     details: `Il codice "${searchCode}" non è stato trovato nel sistema.`,
                 });
+                speak('Codice non trovato');
                 setValidating(false);
                 return;
             }
@@ -66,6 +76,7 @@ function CouponValidation() {
                     text: '⚠️ ATTENZIONE: Codice già utilizzato in precedenza!',
                     details: `Questo codice è stato già riscattato il ${dateStr}`,
                 });
+                speak(`Attenzione: codice già utilizzato per ${couponData.offerTitle}`);
                 setValidating(false);
                 return;
             }
@@ -103,17 +114,27 @@ function CouponValidation() {
                 redeemedAt: serverTimestamp(),
             });
 
+            // Recupera nome utente da Firestore
+            let userName = 'Cliente sconosciuto';
+            if (couponData.userId) {
+                try {
+                    const userSnap = await getDoc(doc(db, 'users', couponData.userId));
+                    if (userSnap.exists()) {
+                        const u = userSnap.data();
+                        userName = u.name || u.displayName || u.email || userName;
+                    }
+                } catch { /* ignora errori di lookup */ }
+            }
+
             setMessage({
                 type: 'success',
                 text: '✅ CODICE VALIDO!',
-                details: `Sconto Autorizzato per: ${couponData.offerTitle}`,
+                details: `Offerta: ${couponData.offerTitle} — Cliente: ${userName}`,
             });
+            speak(`Codice valido! Offerta ${couponData.offerTitle} per ${userName}`);
 
-            // Pulisci il campo dopo 3 secondi
-            setTimeout(() => {
-                setCode('');
-                setMessage(null);
-            }, 3000);
+            // Pulisci solo il campo codice, il messaggio resta visibile
+            setCode('');
 
         } catch (error) {
             console.error('Error validating coupon:', error);

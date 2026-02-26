@@ -11,6 +11,7 @@ interface PromotionFormData {
     validTo: Date;
     active: boolean;
     showAsPopup: boolean;
+    activeDays: number[]; // 0=Dom, 1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab
 }
 
 interface PromotionManagementProps {
@@ -32,6 +33,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
         validTo: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // +7 giorni
         active: true,
         showAsPopup: false,
+        activeDays: [], // vuoto = tutti i giorni
     });
 
     useEffect(() => {
@@ -91,6 +93,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
             validTo: promotion.validTo,
             active: promotion.active,
             showAsPopup: promotion.showAsPopup || false,
+            activeDays: promotion.activeDays || [],
         });
         setShowForm(true);
     };
@@ -119,6 +122,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
             validTo: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             active: true,
             showAsPopup: false,
+            activeDays: [],
         });
         setEditingPromotion(null);
         setShowForm(false);
@@ -269,6 +273,46 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                                 <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>
                                     {mode === 'news' ? 'La novità' : 'La promozione'} apparirà come popup all'apertura dell'app
                                 </small>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600 }}>
+                                📅 Giorni di attivazione
+                            </label>
+                            <small style={{ color: '#666', display: 'block', marginBottom: '10px' }}>
+                                Lascia tutti deselezionati per renderla disponibile ogni giorno
+                            </small>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {[
+                                    { label: 'Lun', value: 1 },
+                                    { label: 'Mar', value: 2 },
+                                    { label: 'Mer', value: 3 },
+                                    { label: 'Gio', value: 4 },
+                                    { label: 'Ven', value: 5 },
+                                    { label: 'Sab', value: 6 },
+                                    { label: 'Dom', value: 0 },
+                                ].map(day => (
+                                    <label key={day.value} style={{
+                                        display: 'flex', alignItems: 'center', gap: '5px',
+                                        padding: '6px 12px', borderRadius: '20px', cursor: 'pointer',
+                                        background: formData.activeDays.includes(day.value) ? 'var(--color-primary, #D4AF37)' : '#f0f0f0',
+                                        color: formData.activeDays.includes(day.value) ? 'white' : '#333',
+                                        fontWeight: 500, fontSize: '0.9rem', transition: 'all 0.2s'
+                                    }}>
+                                        <input
+                                            type="checkbox"
+                                            style={{ display: 'none' }}
+                                            checked={formData.activeDays.includes(day.value)}
+                                            onChange={e => {
+                                                const days = e.target.checked
+                                                    ? [...formData.activeDays, day.value]
+                                                    : formData.activeDays.filter(d => d !== day.value);
+                                                setFormData({ ...formData, activeDays: days });
+                                            }}
+                                        />
+                                        {day.label}
+                                    </label>
+                                ))}
                             </div>
                         </div>
                         <div className="form-actions">

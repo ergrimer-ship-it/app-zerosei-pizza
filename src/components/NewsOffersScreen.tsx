@@ -17,7 +17,7 @@ function NewsOffersScreen() {
         try {
             const data = await getAllPromotions();
             // Filter only active promotions
-            const activePromotions = data.filter(p => p.active);
+            const activePromotions = data.filter(p => p.active && isPromotionValid(p));
             setPromotions(activePromotions);
         } catch (error) {
             console.error('Error loading promotions:', error);
