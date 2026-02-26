@@ -57,7 +57,8 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     validTo: data.validTo?.toDate() || new Date(),
                     active: data.active,
                     showAsPopup: data.showAsPopup,
-                    type: data.type || 'promotion', // Add type
+                    type: data.type || 'promotion',
+                    activeDays: data.activeDays || [],
                     createdAt: data.createdAt?.toDate() || new Date(),
                     updatedAt: data.updatedAt?.toDate() || new Date(),
                 };
@@ -180,6 +181,13 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                 return;
             }
 
+            // Step 2b: Verifica che oggi sia un giorno consentito
+            if (hasActiveDays && !isTodayAllowed) {
+                setError(`📅 Questa offerta è disponibile solo: ${activeDayNames}`);
+                setActivating(false);
+                return;
+            }
+
             // Step 3: Genera nuovo codice
             const newCode = generateRandomCode();
 
@@ -262,6 +270,15 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const isValid = new Date() >= new Date(offer.validFrom) && new Date() <= new Date(offer.validTo);
     const isNews = offer.type === 'news';
 
+    // Controllo giorni attivi
+    const DAY_NAMES_FULL = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const hasActiveDays = offer.activeDays && offer.activeDays.length > 0;
+    const todayDayNum = new Date().getDay(); // 0=Dom...6=Sab
+    const isTodayAllowed = !hasActiveDays || offer.activeDays!.includes(todayDayNum);
+    const activeDayNames = hasActiveDays
+        ? offer.activeDays!.map(d => DAY_NAMES_FULL[d]).join(', ')
+        : 'Tutti i giorni';
+
     return (
         <div className="offer-detail-screen fade-in">
             <button className="back-button" onClick={() => navigate('/news')}>
@@ -292,6 +309,23 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                             {formatDate(offer.validFrom)}
                             {!isNews && ` al ${formatDate(offer.validTo)}`}
                         </p>
+
+                        {!isNews && hasActiveDays && (
+                            <p style={{ marginTop: '8px', fontSize: '0.9rem', color: '#555' }}>
+                                📅 <strong>Disponibile:</strong> {activeDayNames}
+                                {' '}
+                                {!isTodayAllowed && (
+                                    <span style={{ color: '#e53935', fontWeight: 600 }}>
+                                        (oggi non disponibile)
+                                    </span>
+                                )}
+                                {isTodayAllowed && (
+                                    <span style={{ color: '#43a047', fontWeight: 600 }}>
+                                        ✔️ disponibile oggi
+                                    </span>
+                                )}
+                            </p>
+                        )}
                     </div>
 
                     <p className="offer-description">{offer.description}</p>
@@ -326,14 +360,21 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                             {/* Pulsante attivazione - solo se non già attivata e valida */}
                             {!existingCoupon && isValid && (
                                 <div className="activation-section">
-                                    {dailyLimitReached && (
+                                    {!isTodayAllowed && (
+                                        <div className="alert alert-error">
+                                            📅 <strong>Non disponibile oggi</strong><br />
+                                            Questa offerta è attivabile solo: <strong>{activeDayNames}</strong>
+                                        </div>
+                                    )}
+
+                                    {isTodayAllowed && dailyLimitReached && (
                                         <div className="alert alert-error">
                                             🚫 <strong>Limite raggiunto!</strong><br />
                                             Hai già attivato un'offerta oggi. Torna domani per attivarne un'altra!
                                         </div>
                                     )}
 
-                                    {error && !dailyLimitReached && (
+                                    {error && !dailyLimitReached && isTodayAllowed && (
                                         <div className="alert alert-error">
                                             {error}
                                         </div>
@@ -342,12 +383,12 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                                     <button
                                         className="btn btn-primary btn-large"
                                         onClick={handleActivateOffer}
-                                        disabled={activating || dailyLimitReached}
+                                        disabled={activating || dailyLimitReached || !isTodayAllowed}
                                     >
                                         {activating ? 'Attivazione in corso...' : '🎫 ATTIVA QUESTA OFFERTA'}
                                     </button>
 
-                                    {!dailyLimitReached && (
+                                    {isTodayAllowed && !dailyLimitReached && (
                                         <p className="help-text">
                                             Attiva l'offerta per ricevere il tuo codice sconto personale
                                         </p>
