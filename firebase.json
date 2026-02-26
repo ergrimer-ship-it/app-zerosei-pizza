@@ -20,6 +20,14 @@
         ],
         "rewrites": [
             {
+                "source": "/admin.html",
+                "destination": "/admin.html"
+            },
+            {
+                "source": "/admin-manifest.webmanifest",
+                "destination": "/admin-manifest.webmanifest"
+            },
+            {
                 "source": "**",
                 "destination": "/index.html"
             }
