@@ -21,6 +21,7 @@ function ProductManagement() {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [uploading, setUploading] = useState(false);
+    const [sortAlphabetical, setSortAlphabetical] = useState(false);
 
     const [formData, setFormData] = useState<ProductFormData>({
         name: '',
@@ -133,10 +134,17 @@ function ProductManagement() {
         setShowForm(false);
     };
 
-    const filteredProducts = products.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredProducts = products
+        .filter(p =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+            if (sortAlphabetical) {
+                return a.name.localeCompare(b.name);
+            }
+            return 0;
+        });
 
     const getCategoryLabel = (category: ProductCategory): string => {
         const labels: Record<ProductCategory, string> = {
@@ -269,6 +277,15 @@ function ProductManagement() {
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
+                <button
+                    type="button"
+                    className={`btn ${sortAlphabetical ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => setSortAlphabetical(!sortAlphabetical)}
+                    style={{ whiteSpace: 'nowrap' }}
+                    title="Ordina prodotti in ordine alfabetico"
+                >
+                    {sortAlphabetical ? 'Ordinamento: A-Z' : 'Ordina A-Z'}
+                </button>
                 <span className="product-count">{filteredProducts.length} prodotti</span>
             </div>
 
