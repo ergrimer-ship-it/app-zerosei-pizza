@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminLogin.css';
 
-const ADMIN_PASSWORD = 'zerosei2024'; // In production, use environment variable
+const ADMIN_PASSWORD = '2Marzo2021!'; // In production, use environment variable
 
 interface AdminLoginProps {
     onLogin: () => void;
