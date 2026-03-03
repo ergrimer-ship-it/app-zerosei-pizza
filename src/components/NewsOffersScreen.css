@@ -91,38 +91,6 @@
     line-height: 1.5;
 }
 
-/* ============================
-   COUPON STATUS BADGE
-   ============================ */
-.coupon-status-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: var(--spacing-sm);
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    width: fit-content;
-}
-
-.coupon-status-active {
-    background: #e8f5e9;
-    color: #2e7d32;
-    border: 1px solid #a5d6a7;
-}
-
-.coupon-status-redeemed {
-    background: #f5f5f5;
-    color: #757575;
-    border: 1px solid #e0e0e0;
-}
-
-.coupon-status-icon {
-    font-size: 1rem;
-    line-height: 1;
-}
-
 @media (max-width: 600px) {
     .news-card {
         /* Already column by default now, but keeping for safety/legacy overrides if needed */
