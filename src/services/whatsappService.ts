@@ -17,7 +17,7 @@ export function generateWhatsAppMessage(
     userInfo?: { name: string; phone: string },
     orderDetails?: OrderDetails
 ): string {
-    let message = '🍕 *Nuovo Ordine ZeroSei Pizza*\n\n';
+    let message = '*Nuovo ordine Pizzeria ZeroSei* 🍕\n\n';
 
     // Informazioni cliente (se disponibili)
     if (userInfo) {
