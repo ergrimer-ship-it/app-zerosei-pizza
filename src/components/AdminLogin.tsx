@@ -16,7 +16,7 @@ function AdminLogin({ onLogin }: AdminLoginProps) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (password === ADMIN_PASSWORD) {
+        if (password.trim() === ADMIN_PASSWORD) {
             localStorage.setItem('admin_authenticated', 'true');
             onLogin();
             navigate('/admin/dashboard');
