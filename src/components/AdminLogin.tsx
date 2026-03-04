@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './AdminLogin.css';
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD || '').trim() || '2Marzo2021!';
 
 interface AdminLoginProps {
     onLogin: () => void;
