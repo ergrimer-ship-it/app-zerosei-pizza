@@ -131,28 +131,28 @@
     color: var(--color-text-light);
 }
 
-.order-source {
-    font-size: 1.2rem;
-}
-
-.order-status-badge {
-    padding: 2px 8px;
-    border-radius: 12px;
-    color: white;
-    font-size: 0.75rem;
+.order-source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
     font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text);
 }
 
 .order-card-body h4 {
-    margin: 0 0 4px 0;
+    margin: 6px 0 2px 0;
     font-size: 1rem;
     color: var(--color-text);
 }
 
-.order-total {
+.order-phone {
     margin: 0;
-    font-weight: 600;
-    color: var(--color-primary);
+    font-size: 0.85rem;
+    color: var(--color-text-light);
 }
 
 /* Order Details Panel */
@@ -276,27 +276,7 @@
     font-size: 1.1rem;
 }
 
-.status-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-}
-
-.btn-status {
-    background: white;
-    border: 1px solid;
-    padding: 8px;
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-status:hover,
-.btn-status.active {
-    background-color: currentColor;
-    color: white !important;
-}
+/* Sezione stato rimossa */
 
 @media (max-width: 900px) {
     .om-content {

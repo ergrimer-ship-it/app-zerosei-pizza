@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { getAllOrders, updateOrderStatus } from '../../services/dbService';
-import { Order, OrderStatus } from '../../types';
+import { getAllOrders } from '../../services/dbService';
+import { Order } from '../../types';
 import './OrderManagement.css';
 
 function OrderManagement() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
-    // const [filter, setFilter] = useState<OrderStatus | 'all'>('all'); // Removed
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
     useEffect(() => {
@@ -25,46 +24,6 @@ function OrderManagement() {
         setLoading(false);
     };
 
-    const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
-        try {
-            await updateOrderStatus(orderId, newStatus);
-            // Update local state
-            setOrders(orders.map(o =>
-                o.id === orderId ? { ...o, status: newStatus } : o
-            ));
-            if (selectedOrder && selectedOrder.id === orderId) {
-                setSelectedOrder({ ...selectedOrder, status: newStatus });
-            }
-        } catch (error) {
-            console.error('Error updating order status:', error);
-            alert('Errore nell\'aggiornamento dello stato');
-        }
-    };
-
-    const getStatusLabel = (status: OrderStatus) => {
-        switch (status) {
-            case 'pending': return 'In Attesa';
-            case 'confirmed': return 'Confermato';
-            case 'preparing': return 'In Preparazione';
-            case 'ready': return 'Pronto';
-            case 'delivered': return 'Consegnato';
-            case 'cancelled': return 'Annullato';
-            default: return status;
-        }
-    };
-
-    const getStatusColor = (status: OrderStatus) => {
-        switch (status) {
-            case 'pending': return '#ff9800'; // Orange
-            case 'confirmed': return '#2196f3'; // Blue
-            case 'preparing': return '#9c27b0'; // Purple
-            case 'ready': return '#009688'; // Teal
-            case 'delivered': return '#4caf50'; // Green
-            case 'cancelled': return '#f44336'; // Red
-            default: return '#9e9e9e';
-        }
-    };
-
     const getSourceIcon = (source?: string) => {
         switch (source) {
             case 'whatsapp': return '💬';
@@ -74,11 +33,14 @@ function OrderManagement() {
         }
     };
 
-    // const filteredOrders = filter === 'all'
-    //    ? orders
-    //    : orders.filter(o => o.status === filter);
-
-    // const [filter, setFilter] = useState<OrderStatus | 'all'>('all'); // Removed filter state
+    const getSourceLabel = (source?: string) => {
+        switch (source) {
+            case 'whatsapp': return 'WhatsApp';
+            case 'phone': return 'Chiamata';
+            case 'web': return 'Web';
+            default: return 'Sconosciuto';
+        }
+    };
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -93,7 +55,6 @@ function OrderManagement() {
         totalToday: todayOrders.length,
         whatsappToday: todayOrders.filter(o => o.source === 'whatsapp').length,
         phoneToday: todayOrders.filter(o => o.source === 'phone').length,
-        revenueToday: todayOrders.reduce((sum, o) => sum + (o.total || 0), 0)
     };
 
     if (loading) {
@@ -128,15 +89,8 @@ function OrderManagement() {
                 <div className="stat-card">
                     <div className="stat-icon">📞</div>
                     <div className="stat-info">
-                        <h3>Telefono</h3>
+                        <h3>Chiamate</h3>
                         <p className="stat-value">{stats.phoneToday}</p>
-                    </div>
-                </div>
-                <div className="stat-card">
-                    <div className="stat-icon">💶</div>
-                    <div className="stat-info">
-                        <h3>Incasso Oggi</h3>
-                        <p className="stat-value">€{stats.revenueToday.toFixed(2)}</p>
                     </div>
                 </div>
             </div>
@@ -151,25 +105,21 @@ function OrderManagement() {
                                 <div
                                     key={order.id}
                                     className={`order-card ${selectedOrder?.id === order.id ? 'selected' : ''}`}
-                                    onClick={() => setSelectedOrder(order)}
+                                    onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}
                                 >
                                     <div className="order-card-header">
-                                        <span className="order-source" title={order.source}>
-                                            {getSourceIcon(order.source)}
+                                        <span className="order-source-badge" title={getSourceLabel(order.source)}>
+                                            {getSourceIcon(order.source)} {getSourceLabel(order.source)}
                                         </span>
                                         <span className="order-date">
+                                            {new Date(order.createdAt).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}
+                                            {' '}
                                             {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                        <span
-                                            className="order-status-badge"
-                                            style={{ backgroundColor: getStatusColor(order.status) }}
-                                        >
-                                            {getStatusLabel(order.status)}
                                         </span>
                                     </div>
                                     <div className="order-card-body">
                                         <h4>{order.userProfile.firstName} {order.userProfile.lastName}</h4>
-                                        <p className="order-total">€{order.total.toFixed(2)}</p>
+                                        <p className="order-phone">{order.userProfile.phone}</p>
                                     </div>
                                 </div>
                             ))
@@ -177,7 +127,7 @@ function OrderManagement() {
                     </div>
                 </div>
 
-                {selectedOrder ? (
+                {selectedOrder && (
                     <div className="order-details-panel">
                         <div className="od-header">
                             <h3>Dettaglio Ordine</h3>
@@ -189,6 +139,10 @@ function OrderManagement() {
                                 <h4>Cliente</h4>
                                 <p><strong>Nome:</strong> {selectedOrder.userProfile.firstName} {selectedOrder.userProfile.lastName}</p>
                                 <p><strong>Telefono:</strong> {selectedOrder.userProfile.phone}</p>
+                                <p>
+                                    <strong>Canale:</strong>{' '}
+                                    {getSourceIcon(selectedOrder.source)} {getSourceLabel(selectedOrder.source)}
+                                </p>
                                 {selectedOrder.deliveryAddress && (
                                     <p><strong>Indirizzo:</strong> {selectedOrder.deliveryAddress}</p>
                                 )}
@@ -224,52 +178,7 @@ function OrderManagement() {
                                     <p>{selectedOrder.notes}</p>
                                 </div>
                             )}
-
-                            <div className="od-actions">
-                                <h4>Aggiorna Stato</h4>
-                                <div className="status-buttons">
-                                    <button
-                                        className={`btn-status ${selectedOrder.status === 'confirmed' ? 'active' : ''}`}
-                                        onClick={() => handleStatusChange(selectedOrder.id, 'confirmed')}
-                                        style={{ borderColor: '#2196f3', color: '#2196f3' }}
-                                    >
-                                        Conferma
-                                    </button>
-                                    <button
-                                        className={`btn-status ${selectedOrder.status === 'preparing' ? 'active' : ''}`}
-                                        onClick={() => handleStatusChange(selectedOrder.id, 'preparing')}
-                                        style={{ borderColor: '#9c27b0', color: '#9c27b0' }}
-                                    >
-                                        In Prep.
-                                    </button>
-                                    <button
-                                        className={`btn-status ${selectedOrder.status === 'ready' ? 'active' : ''}`}
-                                        onClick={() => handleStatusChange(selectedOrder.id, 'ready')}
-                                        style={{ borderColor: '#009688', color: '#009688' }}
-                                    >
-                                        Pronto
-                                    </button>
-                                    <button
-                                        className={`btn-status ${selectedOrder.status === 'delivered' ? 'active' : ''}`}
-                                        onClick={() => handleStatusChange(selectedOrder.id, 'delivered')}
-                                        style={{ borderColor: '#4caf50', color: '#4caf50' }}
-                                    >
-                                        Consegnato
-                                    </button>
-                                    <button
-                                        className={`btn-status ${selectedOrder.status === 'cancelled' ? 'active' : ''}`}
-                                        onClick={() => handleStatusChange(selectedOrder.id, 'cancelled')}
-                                        style={{ borderColor: '#f44336', color: '#f44336' }}
-                                    >
-                                        Annulla
-                                    </button>
-                                </div>
-                            </div>
                         </div>
-                    </div>
-                ) : (
-                    <div className="order-details-placeholder">
-                        <p>Seleziona un ordine per visualizzare i dettagli</p>
                     </div>
                 )}
             </div>
