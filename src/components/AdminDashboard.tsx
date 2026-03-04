@@ -9,6 +9,7 @@ import ModificationManagement from './admin/ModificationManagement';
 import CustomerManagement from './admin/CustomerManagement';
 import FidelityRewardsManagement from './admin/FidelityRewardsManagement';
 import CouponValidation from './admin/CouponValidation';
+import CouponStats from './admin/CouponStats';
 import { useTheme } from '../hooks/useTheme';
 import './AdminDashboard.css';
 
@@ -44,6 +45,8 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                 return <FidelityRewardsManagement />;
             case 'coupon-validation':
                 return <CouponValidation />;
+            case 'coupon-stats':
+                return <CouponStats />;
             case 'settings':
                 return <Settings />;
             case 'customers':
@@ -107,6 +110,12 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         onClick={() => setActiveTab('coupon-validation')}
                     >
                         🎫 Convalida Coupon
+                    </button>
+                    <button
+                        className={`nav-item ${activeTab === 'coupon-stats' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('coupon-stats')}
+                    >
+                        📊 Statistiche Coupon
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}

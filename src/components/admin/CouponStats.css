@@ -1,0 +1,243 @@
+.coupon-stats {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.cs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.cs-header h2 {
+    margin: 0;
+    color: var(--color-text);
+}
+
+/* Summary cards */
+.cs-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.cs-summary-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid var(--color-primary);
+}
+
+.cs-summary-card.redeemed {
+    border-left-color: #4caf50;
+}
+
+.cs-summary-card.pending {
+    border-left-color: #ff9800;
+}
+
+.cs-summary-icon {
+    font-size: 2rem;
+    background: var(--color-bg-secondary);
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cs-summary-label {
+    margin: 0 0 4px 0;
+    font-size: 0.82rem;
+    color: var(--color-text-light);
+    font-weight: 500;
+}
+
+.cs-summary-value {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+}
+
+/* Section title */
+.cs-section-title {
+    margin: 0 0 12px 0;
+    font-size: 1rem;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Promo cards */
+.cs-promo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cs-promo-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.cs-promo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    cursor: pointer;
+    gap: 12px;
+}
+
+.cs-promo-title {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.cs-promo-name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color-text);
+}
+
+.cs-promo-badges {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.cs-badge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.cs-badge.total {
+    background: #e3f2fd;
+    color: #1565c0;
+}
+
+.cs-badge.redeemed-badge {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.cs-badge.pending-badge {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.cs-expand-icon {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    padding-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Progress bar */
+.cs-progress-bar {
+    margin-top: 12px;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.cs-progress-fill {
+    height: 100%;
+    background: #4caf50;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+}
+
+.cs-progress-label {
+    margin: 4px 0 0 0;
+    font-size: 0.78rem;
+    color: var(--color-text-light);
+}
+
+/* Coupon table */
+.cs-coupon-table-wrapper {
+    margin-top: 16px;
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid #f0f0f0;
+}
+
+.cs-coupon-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+
+.cs-coupon-table thead {
+    background: var(--color-bg-secondary);
+}
+
+.cs-coupon-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.cs-coupon-table td {
+    padding: 10px 14px;
+    border-top: 1px solid #f5f5f5;
+}
+
+.cs-coupon-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.cs-code {
+    background: #f5f5f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    font-weight: 600;
+}
+
+.cs-status {
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.cs-status.redeemed {
+    color: #2e7d32;
+}
+
+.cs-status.active {
+    color: #e65100;
+}
+
+.cs-date {
+    color: var(--color-text-light);
+    font-size: 0.82rem;
+}
+
+.cs-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--color-text-light);
+    font-style: italic;
+}
