@@ -1,9 +1,15 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { createUserProfile, updateUserProfile, getUserByPhone } from '../services/dbService';
+import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
+import { auth } from '../firebase';
 import { db, functions } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+} from 'firebase/auth';
 import './ProfileScreen.css';
 
 interface ProfileScreenProps {
@@ -11,28 +17,34 @@ interface ProfileScreenProps {
     setUserProfile: (profile: UserProfile | null) => void;
 }
 
+type AuthMode = 'login' | 'register';
+
 function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
-    const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        phone: '',
-        email: ''
-    });
+    const [authMode, setAuthMode] = useState<AuthMode>('login');
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncError, setSyncError] = useState<string | null>(null);
 
+    // Form dati profilo
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+    });
+
     useEffect(() => {
         if (userProfile) {
-            setFormData({
+            setFormData(prev => ({
+                ...prev,
                 firstName: userProfile.firstName,
                 lastName: userProfile.lastName,
                 phone: userProfile.phone,
-                email: userProfile.email
-            });
-        } else {
-            setIsEditing(true);
+                email: userProfile.email,
+            }));
         }
     }, [userProfile]);
 
@@ -41,232 +53,278 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const showMessage = (type: 'success' | 'error', text: string) => {
+        setMessage({ type, text });
+        setTimeout(() => setMessage(null), 4000);
+    };
+
+    // ─── REGISTRAZIONE ────────────────────────────────────────────
+    const handleRegister = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email || !formData.password) {
+            showMessage('error', 'Compila tutti i campi obbligatori.');
+            return;
+        }
+        if (formData.password.length < 6) {
+            showMessage('error', 'La password deve essere di almeno 6 caratteri.');
+            return;
+        }
+        if (formData.password !== formData.confirmPassword) {
+            showMessage('error', 'Le password non coincidono.');
+            return;
+        }
+
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+            const uid = cred.user.uid;
+
+            await createUserProfileWithUid(uid, {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                email: formData.email,
+                loyaltyPoints: 0,
+            });
+
+            showMessage('success', 'Registrazione completata! Benvenuto 🎉');
+        } catch (error: any) {
+            if (error.code === 'auth/email-already-in-use') {
+                showMessage('error', 'Email già registrata. Prova ad effettuare il login.');
+            } else {
+                showMessage('error', `Errore: ${error.message}`);
+            }
+        }
+    };
+
+    // ─── LOGIN ────────────────────────────────────────────────────
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!formData.email || !formData.password) {
+            showMessage('error', 'Inserisci email e password.');
+            return;
+        }
+        try {
+            await signInWithEmailAndPassword(auth, formData.email, formData.password);
+            showMessage('success', 'Accesso effettuato!');
+        } catch (error: any) {
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                showMessage('error', 'Email o password non corretti.');
+            } else {
+                showMessage('error', `Errore: ${error.message}`);
+            }
+        }
+    };
+
+    // ─── LOGOUT ───────────────────────────────────────────────────
+    const handleLogout = async () => {
+        await signOut(auth);
+        setUserProfile(null);
+    };
+
+    // ─── MODIFICA PROFILO ─────────────────────────────────────────
+    const handleSaveProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!userProfile || !formData.firstName || !formData.lastName || !formData.phone) {
+            showMessage('error', 'Compila tutti i campi obbligatori.');
+            return;
+        }
+        try {
+            await updateUserProfile(userProfile.id, {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+            });
+            setUserProfile({ ...userProfile, firstName: formData.firstName, lastName: formData.lastName, phone: formData.phone });
+            setIsEditing(false);
+            showMessage('success', 'Profilo aggiornato!');
+        } catch (error: any) {
+            showMessage('error', `Errore: ${error.message}`);
+        }
+    };
+
+    // ─── SYNC FIDELITY ────────────────────────────────────────────
     const handleSyncFidelity = async () => {
         if (!userProfile) return;
         setIsSyncing(true);
         setSyncError(null);
-
         try {
-            console.log('Invoking searchAndSyncFidelityPoints...');
             const searchAndSync = httpsCallable(functions, 'searchAndSyncFidelityPoints');
-
             const result = await searchAndSync({
                 email: userProfile.email,
                 firstName: userProfile.firstName,
                 lastName: userProfile.lastName,
                 phone: userProfile.phone
             });
-
-            console.log('Sync result:', result.data);
             const data = result.data as any;
-
             if (data.success) {
-                // Update Firestore
                 const userRef = doc(db, 'users', userProfile.id);
                 await updateDoc(userRef, {
                     cassaCloudId: data.customerId,
                     loyaltyPoints: data.points,
                     loyaltyPointsLastSync: new Date().toISOString()
                 });
-
-                // Update local profile state immediately if setUserProfile is passed
-                if (setUserProfile) {
-                    setUserProfile({
-                        ...userProfile,
-                        cassaCloudId: data.customerId,
-                        loyaltyPoints: data.points,
-                        loyaltyPointsLastSync: new Date().toISOString()
-                    } as any); // cast as any because types.ts might not be updated in IDE context yet
-                }
-
-                setMessage({ type: 'success', text: `Fidelity Card collegata! Punti: ${data.points}` });
+                setUserProfile({ ...userProfile, cassaCloudId: data.customerId, loyaltyPoints: data.points, loyaltyPointsLastSync: new Date().toISOString() } as any);
+                showMessage('success', `Fidelity Card collegata! Punti: ${data.points}`);
             } else {
                 setSyncError(data.message || 'Errore durante la ricerca');
                 if (data.code === 'CUSTOMER_NOT_FOUND') {
-                    setMessage({ type: 'error', text: 'Nessuna Fidelity Card trovata. Chiedi in cassa!' });
+                    showMessage('error', 'Nessuna Fidelity Card trovata. Chiedi in cassa!');
                 }
             }
-
         } catch (error: any) {
-            console.error('Sync error:', error);
             setSyncError('Errore di connessione. Riprova più tardi.');
-            setMessage({ type: 'error', text: 'Errore di connessione durante la sincronizzazione.' });
+            showMessage('error', 'Errore di connessione durante la sincronizzazione.');
         } finally {
             setIsSyncing(false);
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // ─── RENDER: utente NON loggato ───────────────────────────────
+    if (!userProfile) {
+        return (
+            <div className="profile-screen fade-in">
+                <h1 className="screen-title">Il Tuo Profilo</h1>
 
-        // Basic validation
-        if (!formData.firstName || !formData.lastName || !formData.phone) {
-            setMessage({ type: 'error', text: 'Per favore compila tutti i campi obbligatori.' });
-            return;
-        }
+                {message && <div className={`message ${message.type}`}>{message.text}</div>}
 
-        try {
-            const newProfile: UserProfile = {
-                id: userProfile?.id || '', // ID will be set by Firestore if empty
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                phone: formData.phone,
-                email: formData.email,
-                loyaltyPoints: userProfile?.loyaltyPoints || 0,
-                // Ensure createdAt is a Date object, handling string from localStorage
-                createdAt: userProfile?.createdAt ? new Date(userProfile.createdAt) : new Date(),
-                updatedAt: new Date()
-            };
+                {/* Tabs login / registrazione */}
+                <div className="auth-tabs">
+                    <button
+                        className={`auth-tab ${authMode === 'login' ? 'active' : ''}`}
+                        onClick={() => setAuthMode('login')}
+                    >
+                        🔑 Accedi
+                    </button>
+                    <button
+                        className={`auth-tab ${authMode === 'register' ? 'active' : ''}`}
+                        onClick={() => setAuthMode('register')}
+                    >
+                        ✨ Registrati
+                    </button>
+                </div>
 
-            // Save to Firestore
-            if (userProfile?.id) {
-                // Update existing
-                // Remove id from the data stored in the document to avoid redundancy
-                const { id, ...dataToUpdate } = newProfile;
-                await updateUserProfile(userProfile.id, dataToUpdate);
-            } else {
-                // Create new
-                // Check if user with this phone already exists
-                const existingUser = await getUserByPhone(formData.phone);
-                if (existingUser) {
-                    // Update the existing user instead of creating duplicate
-                    newProfile.id = existingUser.id;
-                    newProfile.loyaltyPoints = existingUser.loyaltyPoints;
-                    newProfile.createdAt = existingUser.createdAt;
+                <div className="profile-card">
+                    {authMode === 'login' ? (
+                        <form onSubmit={handleLogin} className="profile-form">
+                            <div className="form-group">
+                                <label htmlFor="email">Email *</label>
+                                <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} placeholder="La tua email" className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="password">Password *</label>
+                                <input type="password" id="password" name="password" value={formData.password} onChange={handleChange} placeholder="La tua password" className="input" required />
+                            </div>
+                            <div className="form-actions">
+                                <button type="submit" className="btn btn-primary">Accedi</button>
+                            </div>
+                            <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666' }}>
+                                Non hai un account?{' '}
+                                <button type="button" className="btn btn-text" onClick={() => setAuthMode('register')}>
+                                    Registrati
+                                </button>
+                            </p>
+                        </form>
+                    ) : (
+                        <form onSubmit={handleRegister} className="profile-form">
+                            <div className="form-group">
+                                <label htmlFor="firstName">Nome *</label>
+                                <input type="text" id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="Il tuo nome" className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="lastName">Cognome *</label>
+                                <input type="text" id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Il tuo cognome" className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="phone">Telefono *</label>
+                                <input type="tel" id="phone" name="phone" value={formData.phone} onChange={handleChange} placeholder="Il tuo numero di cellulare" className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="reg-email">Email *</label>
+                                <input type="email" id="reg-email" name="email" value={formData.email} onChange={handleChange} placeholder="La tua email" className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="reg-password">Password * <small style={{ color: '#999' }}>(min. 6 caratteri)</small></label>
+                                <input type="password" id="reg-password" name="password" value={formData.password} onChange={handleChange} placeholder="Scegli una password" className="input" required minLength={6} />
+                            </div>
+                            <div className="form-group">
+                                <label htmlFor="confirmPassword">Conferma Password *</label>
+                                <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} placeholder="Ripeti la password" className="input" required />
+                            </div>
+                            <div className="form-actions">
+                                <button type="submit" className="btn btn-primary">Crea Account</button>
+                            </div>
+                            <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666' }}>
+                                Hai già un account?{' '}
+                                <button type="button" className="btn btn-text" onClick={() => setAuthMode('login')}>
+                                    Accedi
+                                </button>
+                            </p>
+                        </form>
+                    )}
+                </div>
 
-                    const { id, ...dataToUpdate } = newProfile;
-                    await updateUserProfile(existingUser.id, dataToUpdate);
-                } else {
-                    // Create brand new
-                    // Ensure we don't pass 'id' to createUserProfile
-                    const { id, ...dataToCreate } = newProfile;
-                    const newId = await createUserProfile(dataToCreate);
-                    newProfile.id = newId;
-                }
-            }
+                <div className="info-box">
+                    <h3>ℹ️ Perché registrarsi?</h3>
+                    <p>Con un account puoi attivare i coupon sconto e collegare la tua Fidelity Card per accumulare punti ad ogni acquisto.</p>
+                </div>
+            </div>
+        );
+    }
 
-            // Save to localStorage
-            localStorage.setItem('user_profile', JSON.stringify(newProfile));
-            setUserProfile(newProfile);
-            setIsEditing(false);
-            setMessage({ type: 'success', text: 'Profilo salvato con successo!' });
-        } catch (error: any) {
-            console.error('Error saving profile:', error);
-            // DEBUG: Mostriamo il messaggio dell'errore vero per capire cosa succede su mobile
-            setMessage({
-                type: 'error',
-                text: `Errore: ${error.message || 'Errore sconosciuto'}. Codice: ${error.code || 'N/A'}`
-            });
-        }
-
-        // Clear message after 3 seconds
-        setTimeout(() => setMessage(null), 3000);
-    };
-
+    // ─── RENDER: utente LOGGATO ───────────────────────────────────
     return (
         <div className="profile-screen fade-in">
             <h1 className="screen-title">Il Tuo Profilo</h1>
 
-            {message && (
-                <div className={`message ${message.type}`}>
-                    {message.text}
-                </div>
-            )}
+            {message && <div className={`message ${message.type}`}>{message.text}</div>}
 
             <div className="profile-card">
                 <div className="profile-header">
                     <div className="avatar-circle">
-                        {formData.firstName ? formData.firstName[0].toUpperCase() : '👤'}
+                        {userProfile.firstName ? userProfile.firstName[0].toUpperCase() : '👤'}
                     </div>
                     {!isEditing && (
                         <div className="profile-summary">
-                            <h2>{userProfile?.firstName} {userProfile?.lastName}</h2>
-                            <p>{userProfile?.phone}</p>
+                            <h2>{userProfile.firstName} {userProfile.lastName}</h2>
+                            <p>{userProfile.phone}</p>
+                            <p style={{ fontSize: '0.85rem', color: '#999' }}>{userProfile.email}</p>
                         </div>
                     )}
                 </div>
 
-                <form onSubmit={handleSubmit} className="profile-form">
-                    <div className="form-group">
-                        <label htmlFor="firstName">Nome *</label>
-                        <input
-                            type="text"
-                            id="firstName"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            placeholder="Il tuo nome"
-                            className="input"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="lastName">Cognome *</label>
-                        <input
-                            type="text"
-                            id="lastName"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            placeholder="Il tuo cognome"
-                            className="input"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="phone">Telefono *</label>
-                        <input
-                            type="tel"
-                            id="phone"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            placeholder="Il tuo numero di cellulare"
-                            className="input"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="email">Email</label>
-                        <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            disabled={!isEditing}
-                            placeholder="La tua email (opzionale)"
-                            className="input"
-                        />
-                    </div>
-
+                {isEditing ? (
+                    <form onSubmit={handleSaveProfile} className="profile-form">
+                        <div className="form-group">
+                            <label>Nome *</label>
+                            <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="input" required />
+                        </div>
+                        <div className="form-group">
+                            <label>Cognome *</label>
+                            <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="input" required />
+                        </div>
+                        <div className="form-group">
+                            <label>Telefono *</label>
+                            <input type="tel" name="phone" value={formData.phone} onChange={handleChange} className="input" required />
+                        </div>
+                        <div className="form-actions">
+                            <button type="button" className="btn btn-ghost" onClick={() => setIsEditing(false)}>Annulla</button>
+                            <button type="submit" className="btn btn-primary">Salva</button>
+                        </div>
+                    </form>
+                ) : (
                     <div className="form-actions">
-                        {isEditing ? (
-                            <>
-                                <button type="button" className="btn btn-ghost" onClick={() => setIsEditing(false)} disabled={!userProfile}>
-                                    Annulla
-                                </button>
-                                <button type="submit" className="btn btn-primary">
-                                    Salva Profilo
-                                </button>
-                            </>
-                        ) : (
-                            <button type="button" className="btn btn-primary" onClick={() => setIsEditing(true)}>
-                                Modifica Dati
-                            </button>
-                        )}
+                        <button className="btn btn-primary" onClick={() => setIsEditing(true)}>Modifica Dati</button>
+                        <button className="btn btn-outline" onClick={handleLogout} style={{ color: '#e53935', borderColor: '#e53935' }}>
+                            🚪 Esci
+                        </button>
                     </div>
-                </form>
+                )}
             </div>
 
-            {/* Fidelity Card Section */}
-            {userProfile && !isEditing && (
+            {/* Fidelity Card */}
+            {!isEditing && (
                 <div className="profile-card">
                     <h3>💳 Fidelity Card ZeroSei</h3>
-
                     {userProfile.cassaCloudId ? (
                         <div className="fidelity-info">
                             <div className="points-display">
@@ -278,24 +336,14 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                                     ? `Aggiornato: ${new Date(userProfile.loyaltyPointsLastSync).toLocaleString('it-IT')}`
                                     : ''}
                             </p>
-                            <button
-                                onClick={handleSyncFidelity}
-                                disabled={isSyncing}
-                                className="btn btn-secondary"
-                                style={{ marginTop: '10px', width: '100%' }}
-                            >
+                            <button onClick={handleSyncFidelity} disabled={isSyncing} className="btn btn-secondary" style={{ marginTop: '10px', width: '100%' }}>
                                 {isSyncing ? '🔄 Sincronizzazione...' : '🔄 Aggiorna Punti'}
                             </button>
                         </div>
                     ) : (
                         <div className="fidelity-connect">
-                            <p>Per collegare la tua Fidelity Card e vedere i punti, comunica alla pizzeria l'email usata nel tuo profilo app. Una volta inserita nel gestionale, premi il pulsante qui sotto.</p>
-                            <button
-                                onClick={handleSyncFidelity}
-                                disabled={isSyncing}
-                                className="btn btn-primary"
-                                style={{ marginTop: '10px', width: '100%' }}
-                            >
+                            <p>Per collegare la tua Fidelity Card, comunica alla pizzeria l'email usata nel profilo. Una volta inserita nel gestionale, premi il pulsante qui sotto.</p>
+                            <button onClick={handleSyncFidelity} disabled={isSyncing} className="btn btn-primary" style={{ marginTop: '10px', width: '100%' }}>
                                 {isSyncing ? '🔍 Ricerca in corso...' : '🔗 Collega Fidelity Card'}
                             </button>
                             {syncError && <p className="error-text" style={{ color: 'red', marginTop: '10px', fontSize: '0.9rem' }}>{syncError}</p>}
@@ -306,10 +354,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
 
             <div className="info-box">
                 <h3>ℹ️ Perché serve il profilo?</h3>
-                <p>
-                    I tuoi dati servono solo per pre-compilare i messaggi WhatsApp per gli ordini e per associare la tua Fidelity Card.
-                    Non vengono inviati a server esterni se non quando invii un ordine o usi la Fidelity Card.
-                </p>
+                <p>I tuoi dati servono per pre-compilare i messaggi WhatsApp per gli ordini e per associare la tua Fidelity Card.</p>
             </div>
         </div>
     );
