@@ -184,7 +184,103 @@
     margin-bottom: 24px;
 }
 
+/* ── Coupon Timer ─────────────────────────────────────── */
+.coupon-timer {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.coupon-timer-bar-track {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.coupon-timer-bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 1s linear;
+}
+
+.coupon-timer-bar-fill.timer-green {
+    background: #4caf50;
+}
+
+.coupon-timer-bar-fill.timer-yellow {
+    background: #ff9800;
+}
+
+.coupon-timer-bar-fill.timer-red {
+    background: #f44336;
+}
+
+.coupon-timer-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.coupon-timer-text.timer-green {
+    color: #c8f5c8;
+}
+
+.coupon-timer-text.timer-yellow {
+    color: #ffe0a0;
+}
+
+.coupon-timer-text.timer-red {
+    color: #ffb3b3;
+    animation: pulse-red 1s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* ── Coupon Scaduto ───────────────────────────────────── */
+.coupon-expired-box {
+    background: #f5f5f5;
+    border: 2px dashed #ccc;
+    border-radius: var(--radius-lg);
+    padding: 40px;
+    text-align: center;
+    color: #888;
+}
+
+.coupon-expired-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 12px;
+    filter: grayscale(1);
+}
+
+.coupon-expired-box h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #555;
+    margin-bottom: 8px;
+}
+
+.coupon-expired-box p {
+    font-size: 0.95rem;
+    color: #888;
+}
+
 @media (max-width: 768px) {
+
     .offer-detail-content {
         padding: 20px;
     }

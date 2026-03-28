@@ -58,6 +58,22 @@ function CouponValidation() {
             const couponDoc = querySnapshot.docs[0];
             const couponData = couponDoc.data();
 
+            // CASO B0: Coupon scaduto (> 1 ora dall'attivazione)
+            const createdAt = couponData.createdAt?.toDate?.();
+            if (createdAt) {
+                const expiresAt = new Date(createdAt.getTime() + 60 * 60 * 1000);
+                if (new Date() > expiresAt) {
+                    setMessage({
+                        type: 'error',
+                        text: '⏰ Coupon Scaduto',
+                        details: `Questo coupon era valido solo per 1 ora dall'attivazione. Scaduto alle ${expiresAt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}.`,
+                    });
+                    speak('Coupon scaduto. Non è più utilizzabile.');
+                    setValidating(false);
+                    return;
+                }
+            }
+
             // CASO B: Codice già utilizzato
             if (couponData.status === 'redeemed') {
                 const redeemedDate = couponData.redeemedAt?.toDate();

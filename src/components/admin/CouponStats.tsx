@@ -24,9 +24,18 @@ interface PromoStat {
 }
 
 function CouponStats() {
+    // Helper per estrarre il mese corrente come "YYYY-MM"
+    const getCurrentMonthYearString = (): string => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    };
+
     const [loading, setLoading] = useState(true);
     const [coupons, setCoupons] = useState<CouponRecord[]>([]);
     const [expandedPromo, setExpandedPromo] = useState<string | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentMonthYearString()); // Corrente di default
 
     useEffect(() => {
         loadCoupons();
@@ -48,9 +57,38 @@ function CouponStats() {
         setLoading(false);
     };
 
-    // Raggruppa i coupon per promozione
+    // Helper per estrarre stringa "YYYY-MM"
+    const getMonthYearString = (ts: any): string | null => {
+        if (!ts) return null;
+        const d = ts.toDate ? ts.toDate() : new Date(ts);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        return `${year}-${month}`;
+    };
+
+    // Helper per formattare "YYYY-MM" in "Mese Anno" (es. "Marzo 2026")
+    const formatMonthYearLabel = (monthStr: string) => {
+        if (!monthStr) return 'Sconosciuto';
+        const [year, month] = monthStr.split('-');
+        const date = new Date(parseInt(year), parseInt(month) - 1, 1);
+        return date.toLocaleDateString('it-IT', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase());
+    };
+
+    // Estrai tutti i mesi disponibili dai coupon e aggiungi sempre il mese corrente
+    const availableMonthsSet = new Set(
+        coupons.map(c => getMonthYearString(c.createdAt)).filter(Boolean) as string[]
+    );
+    availableMonthsSet.add(getCurrentMonthYearString());
+    const availableMonths = Array.from(availableMonthsSet).sort().reverse(); // Decrescente (dal più recente)
+
+    // Filtra i coupon in base al mese selezionato
+    const filteredCoupons = selectedMonth
+        ? coupons.filter(c => getMonthYearString(c.createdAt) === selectedMonth)
+        : coupons;
+
+    // Raggruppa i coupon filtrati per promozione
     const promoStats: PromoStat[] = Object.values(
-        coupons.reduce((acc, coupon) => {
+        filteredCoupons.reduce((acc, coupon) => {
             if (!acc[coupon.offerId]) {
                 acc[coupon.offerId] = {
                     offerId: coupon.offerId,
@@ -69,9 +107,9 @@ function CouponStats() {
         }, {} as Record<string, PromoStat>)
     ).sort((a, b) => b.totalActivated - a.totalActivated);
 
-    const totalActivated = coupons.length;
-    const totalRedeemed = coupons.filter(c => c.status === 'redeemed').length;
-    const totalPending = coupons.filter(c => c.status === 'active').length;
+    const totalActivated = filteredCoupons.length;
+    const totalRedeemed = filteredCoupons.filter(c => c.status === 'redeemed').length;
+    const totalPending = filteredCoupons.filter(c => c.status === 'active').length;
 
     const formatDate = (ts: any) => {
         if (!ts) return '—';
@@ -86,7 +124,21 @@ function CouponStats() {
         <div className="coupon-stats">
             <div className="cs-header">
                 <h2>📊 Monitor Promozioni & Coupon</h2>
-                <button className="btn btn-outline" onClick={loadCoupons}>🔄 Aggiorna</button>
+                <div className="cs-header-actions">
+                    <select
+                        className="cs-month-filter"
+                        value={selectedMonth}
+                        onChange={(e) => setSelectedMonth(e.target.value)}
+                    >
+                        <option value="">🗓️ Tutti i mesi</option>
+                        {availableMonths.map(month => (
+                            <option key={month} value={month}>
+                                🗓️ {formatMonthYearLabel(month)}
+                            </option>
+                        ))}
+                    </select>
+                    <button className="btn btn-outline" onClick={loadCoupons}>🔄</button>
+                </div>
             </div>
 
             {/* Riepilogo globale */}
@@ -116,7 +168,12 @@ function CouponStats() {
 
             {/* Dettaglio per promozione */}
             {promoStats.length === 0 ? (
-                <div className="cs-empty">Nessun coupon attivato finora.</div>
+                <div className="cs-empty">
+                    {selectedMonth
+                        ? `Nessun coupon attivato a ${formatMonthYearLabel(selectedMonth)}.`
+                        : 'Nessun coupon attivato finora.'
+                    }
+                </div>
             ) : (
                 <div className="cs-promo-list">
                     <h3 className="cs-section-title">Dettaglio per Promozione</h3>
@@ -163,18 +220,25 @@ function CouponStats() {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {promo.coupons.map(c => (
-                                                <tr key={c.id}>
-                                                    <td><code className="cs-code">{c.code}</code></td>
-                                                    <td>
-                                                        <span className={`cs-status ${c.status}`}>
-                                                            {c.status === 'redeemed' ? '✅ Riscattato' : '⏳ In attesa'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="cs-date">{formatDate(c.createdAt)}</td>
-                                                    <td className="cs-date">{c.redeemedAt ? formatDate(c.redeemedAt) : '—'}</td>
-                                                </tr>
-                                            ))}
+                                            {promo.coupons.map(c => {
+                                                const isExpired = c.status === 'active' && (() => {
+                                                    if (!c.createdAt) return false;
+                                                    const created = c.createdAt.toDate ? c.createdAt.toDate() : new Date(c.createdAt);
+                                                    return Date.now() - created.getTime() > 60 * 60 * 1000;
+                                                })();
+                                                return (
+                                                    <tr key={c.id}>
+                                                        <td><code className="cs-code">{c.code}</code></td>
+                                                        <td>
+                                                            <span className={`cs-status ${isExpired ? 'expired' : c.status}`}>
+                                                                {c.status === 'redeemed' ? '✅ Riscattato' : isExpired ? '⏰ Scaduto' : '⏳ In attesa'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="cs-date">{formatDate(c.createdAt)}</td>
+                                                        <td className="cs-date">{c.redeemedAt ? formatDate(c.redeemedAt) : '—'}</td>
+                                                    </tr>
+                                                );
+                                            })}
                                         </tbody>
                                     </table>
                                 </div>
