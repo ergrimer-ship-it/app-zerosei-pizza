@@ -151,6 +151,7 @@ export interface NewsPromotion {
     showAsPopup?: boolean;
     type?: 'promotion' | 'news'; // New field to distinguish between promotions and news
     activeDays?: number[]; // Giorni della settimana: 0=Dom, 1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab (opzionale: se vuoto = tutti i giorni)
+    newUsersOnly?: boolean; // Se true, visibile solo agli utenti registrati da meno di 30 giorni
     createdAt: Date;
     updatedAt: Date;
 }
