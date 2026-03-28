@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
-import { auth } from '../firebase';
-import { db, functions } from '../firebase';
+import { createUserProfileWithUid, getUserProfile, updateUserProfile } from '../services/dbService';
+import { auth, db, functions } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
+    GoogleAuthProvider,
+    signInWithPopup,
 } from 'firebase/auth';
 import './ProfileScreen.css';
 
@@ -25,8 +26,8 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncError, setSyncError] = useState<string | null>(null);
+    const [googlePendingUser, setGooglePendingUser] = useState<{ uid: string; email: string; displayName: string } | null>(null);
 
-    // Form dati profilo
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -58,7 +59,58 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         setTimeout(() => setMessage(null), 4000);
     };
 
-    // ─── REGISTRAZIONE ────────────────────────────────────────────
+    // ─── GOOGLE SIGN-IN ───────────────────────────────────────────
+    const handleGoogleSignIn = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const firebaseUser = result.user;
+
+            const existing = await getUserProfile(firebaseUser.uid);
+            if (!existing) {
+                const parts = (firebaseUser.displayName || '').split(' ');
+                setFormData(prev => ({
+                    ...prev,
+                    firstName: parts[0] || '',
+                    lastName: parts.slice(1).join(' ') || '',
+                    email: firebaseUser.email || '',
+                    phone: '',
+                }));
+                setGooglePendingUser({
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || '',
+                });
+            }
+            // Se il profilo esiste, onAuthStateChanged in App.tsx carica userProfile automaticamente
+        } catch (error: any) {
+            showMessage('error', `Errore Google: ${error.message}`);
+        }
+    };
+
+    // ─── COMPLETAMENTO PROFILO GOOGLE ─────────────────────────────
+    const handleCompleteGoogleProfile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!googlePendingUser) return;
+        if (!formData.firstName || !formData.lastName || !formData.phone) {
+            showMessage('error', 'Compila tutti i campi obbligatori.');
+            return;
+        }
+        try {
+            await createUserProfileWithUid(googlePendingUser.uid, {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                phone: formData.phone,
+                email: googlePendingUser.email,
+                loyaltyPoints: 0,
+            });
+            setGooglePendingUser(null);
+        } catch (error: any) {
+            showMessage('error', `Errore: ${error.message}`);
+        }
+    };
+
+    // ─── REGISTRAZIONE EMAIL/PASSWORD ─────────────────────────────
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!formData.firstName || !formData.lastName || !formData.phone || !formData.email || !formData.password) {
@@ -73,23 +125,19 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
             showMessage('error', 'Le password non coincidono.');
             return;
         }
-
         try {
             const cred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-            const uid = cred.user.uid;
-
-            await createUserProfileWithUid(uid, {
+            await createUserProfileWithUid(cred.user.uid, {
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 phone: formData.phone,
                 email: formData.email,
                 loyaltyPoints: 0,
             });
-
             showMessage('success', 'Registrazione completata! Benvenuto 🎉');
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
-                showMessage('error', 'Email già registrata. Prova ad effettuare il login.');
+                showMessage('error', 'Email già registrata. Prova ad accedere.');
             } else {
                 showMessage('error', `Errore: ${error.message}`);
             }
@@ -105,7 +153,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         }
         try {
             await signInWithEmailAndPassword(auth, formData.email, formData.password);
-            showMessage('success', 'Accesso effettuato!');
         } catch (error: any) {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 showMessage('error', 'Email o password non corretti.');
@@ -124,7 +171,8 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     // ─── MODIFICA PROFILO ─────────────────────────────────────────
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!userProfile || !formData.firstName || !formData.lastName || !formData.phone) {
+        if (!userProfile) return;
+        if (!formData.firstName || !formData.lastName || !formData.phone) {
             showMessage('error', 'Compila tutti i campi obbligatori.');
             return;
         }
@@ -181,24 +229,48 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
 
     // ─── RENDER: utente NON loggato ───────────────────────────────
     if (!userProfile) {
+        // Form completamento profilo dopo Google Sign-In
+        if (googlePendingUser) {
+            return (
+                <div className="profile-screen fade-in">
+                    <h1 className="screen-title">Completa il Profilo</h1>
+                    {message && <div className={`message ${message.type}`}>{message.text}</div>}
+                    <div className="profile-card">
+                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '16px' }}>
+                            Ciao <strong>{googlePendingUser.displayName}</strong>! Aggiungi il tuo numero per completare la registrazione.
+                        </p>
+                        <form onSubmit={handleCompleteGoogleProfile} className="profile-form">
+                            <div className="form-group">
+                                <label>Nome *</label>
+                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label>Cognome *</label>
+                                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="input" required />
+                            </div>
+                            <div className="form-group">
+                                <label>Telefono *</label>
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Il tuo numero di cellulare" className="input" required />
+                            </div>
+                            <div className="form-actions">
+                                <button type="submit" className="btn btn-primary">Completa Registrazione</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="profile-screen fade-in">
                 <h1 className="screen-title">Il Tuo Profilo</h1>
-
                 {message && <div className={`message ${message.type}`}>{message.text}</div>}
 
-                {/* Tabs login / registrazione */}
                 <div className="auth-tabs">
-                    <button
-                        className={`auth-tab ${authMode === 'login' ? 'active' : ''}`}
-                        onClick={() => setAuthMode('login')}
-                    >
+                    <button className={`auth-tab ${authMode === 'login' ? 'active' : ''}`} onClick={() => setAuthMode('login')}>
                         🔑 Accedi
                     </button>
-                    <button
-                        className={`auth-tab ${authMode === 'register' ? 'active' : ''}`}
-                        onClick={() => setAuthMode('register')}
-                    >
+                    <button className={`auth-tab ${authMode === 'register' ? 'active' : ''}`} onClick={() => setAuthMode('register')}>
                         ✨ Registrati
                     </button>
                 </div>
@@ -207,21 +279,24 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                     {authMode === 'login' ? (
                         <form onSubmit={handleLogin} className="profile-form">
                             <div className="form-group">
-                                <label htmlFor="email">Email *</label>
-                                <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} placeholder="La tua email" className="input" required />
+                                <label htmlFor="login-email">Email *</label>
+                                <input type="email" id="login-email" name="email" value={formData.email} onChange={handleChange} placeholder="La tua email" className="input" required />
                             </div>
                             <div className="form-group">
-                                <label htmlFor="password">Password *</label>
-                                <input type="password" id="password" name="password" value={formData.password} onChange={handleChange} placeholder="La tua password" className="input" required />
+                                <label htmlFor="login-password">Password *</label>
+                                <input type="password" id="login-password" name="password" value={formData.password} onChange={handleChange} placeholder="La tua password" className="input" required />
                             </div>
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary">Accedi</button>
                             </div>
+                            <div className="google-divider"><span>oppure</span></div>
+                            <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
+                                Accedi con Google
+                            </button>
                             <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666' }}>
                                 Non hai un account?{' '}
-                                <button type="button" className="btn btn-text" onClick={() => setAuthMode('register')}>
-                                    Registrati
-                                </button>
+                                <button type="button" className="btn btn-text" onClick={() => setAuthMode('register')}>Registrati</button>
                             </p>
                         </form>
                     ) : (
@@ -253,11 +328,14 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary">Crea Account</button>
                             </div>
+                            <div className="google-divider"><span>oppure</span></div>
+                            <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
+                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
+                                Registrati con Google
+                            </button>
                             <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666' }}>
                                 Hai già un account?{' '}
-                                <button type="button" className="btn btn-text" onClick={() => setAuthMode('login')}>
-                                    Accedi
-                                </button>
+                                <button type="button" className="btn btn-text" onClick={() => setAuthMode('login')}>Accedi</button>
                             </p>
                         </form>
                     )}
@@ -265,7 +343,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
 
                 <div className="info-box">
                     <h3>ℹ️ Perché registrarsi?</h3>
-                    <p>Con un account puoi attivare i coupon sconto e collegare la tua Fidelity Card per accumulare punti ad ogni acquisto.</p>
+                    <p>Con un account puoi attivare i coupon sconto e collegare la tua Fidelity Card per accumulare punti.</p>
                 </div>
             </div>
         );
@@ -275,7 +353,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     return (
         <div className="profile-screen fade-in">
             <h1 className="screen-title">Il Tuo Profilo</h1>
-
             {message && <div className={`message ${message.type}`}>{message.text}</div>}
 
             <div className="profile-card">
@@ -331,7 +408,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                                 <span className="points-label">I tuoi Punti:</span>
                                 <span className="points-value">{userProfile.loyaltyPoints || 0}</span>
                             </div>
-                            <p className="last-sync" style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
                                 {userProfile.loyaltyPointsLastSync
                                     ? `Aggiornato: ${new Date(userProfile.loyaltyPointsLastSync).toLocaleString('it-IT')}`
                                     : ''}
@@ -346,7 +423,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                             <button onClick={handleSyncFidelity} disabled={isSyncing} className="btn btn-primary" style={{ marginTop: '10px', width: '100%' }}>
                                 {isSyncing ? '🔍 Ricerca in corso...' : '🔗 Collega Fidelity Card'}
                             </button>
-                            {syncError && <p className="error-text" style={{ color: 'red', marginTop: '10px', fontSize: '0.9rem' }}>{syncError}</p>}
+                            {syncError && <p style={{ color: 'red', marginTop: '10px', fontSize: '0.9rem' }}>{syncError}</p>}
                         </div>
                     )}
                 </div>
