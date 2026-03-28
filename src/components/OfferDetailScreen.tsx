@@ -7,6 +7,14 @@ import './OfferDetailScreen.css';
 
 const COUPON_DURATION_SECONDS = 3600; // 1 ora
 
+// Utente "nuovo" = registrato da meno di 30 giorni
+const isNewUser = (profile: UserProfile | null): boolean => {
+    if (!profile?.createdAt) return false;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return new Date(profile.createdAt) >= thirtyDaysAgo;
+};
+
 interface OfferDetailScreenProps {
     userProfile: UserProfile | null;
 }
@@ -82,6 +90,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     showAsPopup: data.showAsPopup,
                     type: data.type || 'promotion',
                     activeDays: data.activeDays || [],
+                    newUsersOnly: data.newUsersOnly || false,
                     createdAt: data.createdAt?.toDate() || new Date(),
                     updatedAt: data.updatedAt?.toDate() || new Date(),
                 };
@@ -294,6 +303,27 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const isValid = new Date() >= new Date(offer.validFrom) && new Date() <= new Date(offer.validTo);
     const isNews = offer.type === 'news';
 
+    // Controllo offerta nuovi utenti
+    if (!isNews && offer.newUsersOnly && userProfile && !isNewUser(userProfile)) {
+        return (
+            <div className="offer-detail-screen fade-in">
+                <button className="back-button" onClick={() => navigate('/news')}>
+                    ← Torna alle offerte
+                </button>
+                <div className="offer-detail-card">
+                    <div className="login-prompt">
+                        <span className="lock-icon">🆕</span>
+                        <h2>Offerta Riservata ai Nuovi Iscritti</h2>
+                        <p>Questa promozione è disponibile solo per i clienti che si sono registrati negli ultimi 30 giorni.</p>
+                        <button className="btn btn-text" style={{ marginTop: '10px' }} onClick={() => navigate('/news')}>
+                            Torna alle offerte
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // Controllo giorni attivi
     const DAY_NAMES_FULL = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
     const hasActiveDays = offer.activeDays && offer.activeDays.length > 0;
@@ -302,6 +332,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const activeDayNames = hasActiveDays
         ? offer.activeDays!.map(d => DAY_NAMES_FULL[d]).join(', ')
         : 'Tutti i giorni';
+
 
     return (
         <div className="offer-detail-screen fade-in">

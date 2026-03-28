@@ -11,6 +11,14 @@ interface CouponStatus {
     code?: string;
 }
 
+// Utente "nuovo" = registrato da meno di 30 giorni
+const isNewUser = (profile: { createdAt?: Date | string } | null): boolean => {
+    if (!profile?.createdAt) return false;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return new Date(profile.createdAt) >= thirtyDaysAgo;
+};
+
 function NewsOffersScreen() {
     const navigate = useNavigate();
     const [promotions, setPromotions] = useState<NewsPromotion[]>([]);
@@ -24,30 +32,47 @@ function NewsOffersScreen() {
     const loadPromotions = async () => {
         try {
             const data = await getAllPromotions();
-            const activePromotions = data.filter(p => p.active && isPromotionValid(p));
-            setPromotions(activePromotions);
+            const allActive = data.filter(p => p.active && isPromotionValid(p));
 
             // Carica stato coupon utente (solo se loggato)
             const savedProfile = localStorage.getItem('user_profile');
+            let profile: any = null;
+            let statusMap: Record<string, CouponStatus> = {};
+
             if (savedProfile) {
-                const profile = JSON.parse(savedProfile);
+                profile = JSON.parse(savedProfile);
                 if (profile.id && !profile.id.startsWith('temp_')) {
-                    await loadUserCoupons(profile.id, activePromotions);
+                    statusMap = await fetchUserCoupons(profile.id, allActive);
+                    setCouponStatusMap(statusMap);
                 }
             }
+
+            // Filtra offerte newUsersOnly:
+            // - Nascondi se l'utente non è nuovo
+            // - Nascondi se il coupon è già stato riscattato
+            const visiblePromotions = allActive.filter(p => {
+                if (!p.newUsersOnly) return true; // offerta normale, sempre visibile
+                if (!isNewUser(profile)) return false; // utente non nuovo
+                const coupon = statusMap[p.id];
+                if (coupon?.status === 'redeemed') return false; // già riscattata
+                return true;
+            });
+
+            setPromotions(visiblePromotions);
         } catch (error) {
             console.error('Error loading promotions:', error);
         }
         setLoading(false);
     };
 
-    const loadUserCoupons = async (userId: string, promotionsList: NewsPromotion[]) => {
+    // Funzione che ritorna la mappa senza effetti collaterali (usata in loadPromotions)
+    const fetchUserCoupons = async (userId: string, promotionsList: NewsPromotion[]): Promise<Record<string, CouponStatus>> => {
         try {
             const promotionIds = promotionsList
                 .filter(p => p.type !== 'news')
                 .map(p => p.id);
 
-            if (promotionIds.length === 0) return;
+            if (promotionIds.length === 0) return {};
 
             const couponsRef = collection(db, 'GeneratedCoupons');
             const q = query(couponsRef, where('userId', '==', userId));
@@ -57,17 +82,22 @@ function NewsOffersScreen() {
             querySnapshot.forEach(doc => {
                 const data = doc.data();
                 if (promotionIds.includes(data.offerId)) {
-                    statusMap[data.offerId] = {
-                        status: data.status,
-                        code: data.code,
-                    };
+                    statusMap[data.offerId] = { status: data.status, code: data.code };
                 }
             });
-            setCouponStatusMap(statusMap);
+            return statusMap;
         } catch (error) {
             console.error('Error loading user coupons:', error);
+            return {};
         }
     };
+
+    // Compatibilità: wrapper che aggiorna lo state
+    const loadUserCoupons = async (userId: string, promotionsList: NewsPromotion[]) => {
+        const statusMap = await fetchUserCoupons(userId, promotionsList);
+        setCouponStatusMap(statusMap);
+    };
+    void loadUserCoupons; // usato implicitamente tramite fetchUserCoupons
 
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('it-IT', {

@@ -12,6 +12,7 @@ interface PromotionFormData {
     active: boolean;
     showAsPopup: boolean;
     activeDays: number[]; // 0=Dom, 1=Lun, 2=Mar, 3=Mer, 4=Gio, 5=Ven, 6=Sab
+    newUsersOnly: boolean;
 }
 
 interface PromotionManagementProps {
@@ -34,6 +35,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
         active: true,
         showAsPopup: false,
         activeDays: [], // vuoto = tutti i giorni
+        newUsersOnly: false,
     });
 
     useEffect(() => {
@@ -94,6 +96,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
             active: promotion.active,
             showAsPopup: promotion.showAsPopup || false,
             activeDays: promotion.activeDays || [],
+            newUsersOnly: promotion.newUsersOnly || false,
         });
         setShowForm(true);
     };
@@ -123,6 +126,7 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
             active: true,
             showAsPopup: false,
             activeDays: [],
+            newUsersOnly: false,
         });
         setEditingPromotion(null);
         setShowForm(false);
@@ -274,6 +278,18 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                                     {mode === 'news' ? 'La novità' : 'La promozione'} apparirà come popup all'apertura dell'app
                                 </small>
                             </div>
+                            <div className="form-group">
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.newUsersOnly}
+                                        onChange={e => setFormData({ ...formData, newUsersOnly: e.target.checked })}
+                                    />{' '}🆕 Solo nuovi utenti (benvenuto)
+                                </label>
+                                <small style={{ color: '#666', fontSize: '0.85rem', marginTop: '4px' }}>
+                                    Visibile solo agli utenti registrati da meno di 30 giorni, una sola volta
+                                </small>
+                            </div>
                         </div>
                         <div className="form-group">
                             <label style={{ marginBottom: '8px', display: 'block', fontWeight: 600 }}>
@@ -342,6 +358,9 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                             <tr key={promotion.id}>
                                 <td>
                                     <strong>{promotion.title}</strong>
+                                    {promotion.newUsersOnly && (
+                                        <span style={{ marginLeft: '6px', fontSize: '0.75rem', background: '#e3f2fd', color: '#1565c0', padding: '2px 7px', borderRadius: '10px', fontWeight: 600 }}>🆕 Nuovi utenti</span>
+                                    )}
                                     <div className="promotion-desc">{promotion.description}</div>
                                 </td>
                                 <td>
