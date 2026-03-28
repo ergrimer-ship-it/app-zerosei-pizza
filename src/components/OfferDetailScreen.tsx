@@ -213,6 +213,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             // Step 3: Genera nuovo codice
             const newCode = generateRandomCode();
+            const activatedAt = new Date(); // timestamp locale per il timer
 
             // Salva in Firestore
             const couponData = {
@@ -226,9 +227,9 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             await addDoc(collection(db, 'GeneratedCoupons'), couponData);
 
-            // Mostra codice
+            // Mostra codice — usa il timestamp locale per il conto alla rovescia
             setGeneratedCode(newCode);
-            setExistingCoupon({ ...couponData, code: newCode });
+            setExistingCoupon({ ...couponData, createdAt: { toDate: () => activatedAt }, code: newCode });
         } catch (err) {
             console.error('Error activating offer:', err);
             setError('Errore nell\'attivazione dell\'offerta. Riprova.');
