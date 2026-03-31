@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { createUserProfileWithUid, getUserProfile, updateUserProfile } from '../services/dbService';
+import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
 import { auth, db, functions } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
@@ -8,8 +8,6 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
-    GoogleAuthProvider,
-    signInWithPopup,
 } from 'firebase/auth';
 import './ProfileScreen.css';
 
@@ -26,7 +24,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [syncError, setSyncError] = useState<string | null>(null);
-    const [googlePendingUser, setGooglePendingUser] = useState<{ uid: string; email: string; displayName: string } | null>(null);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -59,56 +56,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         setTimeout(() => setMessage(null), 4000);
     };
 
-    // ─── GOOGLE SIGN-IN ───────────────────────────────────────────
-    const handleGoogleSignIn = async () => {
-        try {
-            const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const firebaseUser = result.user;
 
-            const existing = await getUserProfile(firebaseUser.uid);
-            if (!existing) {
-                const parts = (firebaseUser.displayName || '').split(' ');
-                setFormData(prev => ({
-                    ...prev,
-                    firstName: parts[0] || '',
-                    lastName: parts.slice(1).join(' ') || '',
-                    email: firebaseUser.email || '',
-                    phone: '',
-                }));
-                setGooglePendingUser({
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email || '',
-                    displayName: firebaseUser.displayName || '',
-                });
-            }
-            // Se il profilo esiste, onAuthStateChanged in App.tsx carica userProfile automaticamente
-        } catch (error: any) {
-            showMessage('error', `Errore Google: ${error.message}`);
-        }
-    };
-
-    // ─── COMPLETAMENTO PROFILO GOOGLE ─────────────────────────────
-    const handleCompleteGoogleProfile = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!googlePendingUser) return;
-        if (!formData.firstName || !formData.lastName || !formData.phone) {
-            showMessage('error', 'Compila tutti i campi obbligatori.');
-            return;
-        }
-        try {
-            await createUserProfileWithUid(googlePendingUser.uid, {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                phone: formData.phone,
-                email: googlePendingUser.email,
-                loyaltyPoints: 0,
-            });
-            setGooglePendingUser(null);
-        } catch (error: any) {
-            showMessage('error', `Errore: ${error.message}`);
-        }
-    };
 
     // ─── REGISTRAZIONE EMAIL/PASSWORD ─────────────────────────────
     const handleRegister = async (e: React.FormEvent) => {
@@ -229,38 +177,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
 
     // ─── RENDER: utente NON loggato ───────────────────────────────
     if (!userProfile) {
-        // Form completamento profilo dopo Google Sign-In
-        if (googlePendingUser) {
-            return (
-                <div className="profile-screen fade-in">
-                    <h1 className="screen-title">Completa il Profilo</h1>
-                    {message && <div className={`message ${message.type}`}>{message.text}</div>}
-                    <div className="profile-card">
-                        <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '16px' }}>
-                            Ciao <strong>{googlePendingUser.displayName}</strong>! Aggiungi il tuo numero per completare la registrazione.
-                        </p>
-                        <form onSubmit={handleCompleteGoogleProfile} className="profile-form">
-                            <div className="form-group">
-                                <label>Nome *</label>
-                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} className="input" required />
-                            </div>
-                            <div className="form-group">
-                                <label>Cognome *</label>
-                                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="input" required />
-                            </div>
-                            <div className="form-group">
-                                <label>Telefono *</label>
-                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Il tuo numero di cellulare" className="input" required />
-                            </div>
-                            <div className="form-actions">
-                                <button type="submit" className="btn btn-primary">Completa Registrazione</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            );
-        }
-
         return (
             <div className="profile-screen fade-in">
                 <h1 className="screen-title">Il Tuo Profilo</h1>
@@ -289,11 +205,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary">Accedi</button>
                             </div>
-                            <div className="google-divider"><span>oppure</span></div>
-                            <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
-                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
-                                Accedi con Google
-                            </button>
                             <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666' }}>
                                 Non hai un account?{' '}
                                 <button type="button" className="btn btn-text" onClick={() => setAuthMode('register')}>Registrati</button>
@@ -328,11 +239,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary">Crea Account</button>
                             </div>
-                            <div className="google-divider"><span>oppure</span></div>
-                            <button type="button" className="btn-google" onClick={handleGoogleSignIn}>
-                                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
-                                Registrati con Google
-                            </button>
                             <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '0.9rem', color: '#666' }}>
                                 Hai già un account?{' '}
                                 <button type="button" className="btn btn-text" onClick={() => setAuthMode('login')}>Accedi</button>
@@ -404,9 +310,9 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                     <h3>💳 Fidelity Card ZeroSei</h3>
                     {userProfile.cassaCloudId ? (
                         <div className="fidelity-info">
-                            <div className="points-display">
-                                <span className="points-label">I tuoi Punti:</span>
-                                <span className="points-value">{userProfile.loyaltyPoints || 0}</span>
+                            <div className="fidelity-points-display">
+                                <span className="fidelity-points-label">I tuoi Punti:</span>
+                                <span className="fidelity-points-value">{userProfile.loyaltyPoints || 0}</span>
                             </div>
                             <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
                                 {userProfile.loyaltyPointsLastSync
