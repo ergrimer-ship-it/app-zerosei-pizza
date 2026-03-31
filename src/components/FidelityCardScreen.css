@@ -26,7 +26,7 @@
 .digital-card {
     width: 100%;
     max-width: 400px;
-    height: 240px;
+    height: 260px;
     position: relative;
     transition: transform 0.6s;
     transform-style: preserve-3d;
@@ -93,7 +93,7 @@
 }
 
 .points-value {
-    font-size: 4rem;
+    font-size: 3.5rem;
     font-weight: var(--font-weight-extrabold);
     line-height: 1;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
@@ -174,8 +174,8 @@
 
 /* Gamification Progress Bar */
 .gamification-container {
-    margin-top: var(--spacing-lg);
-    width: 80%;
+    margin-top: var(--spacing-sm);
+    width: 95%;
     margin-left: auto;
     margin-right: auto;
     text-align: center;
@@ -183,8 +183,9 @@
 
 .progress-message {
     color: white;
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--spacing-sm);
+    font-size: 0.85rem;
+    line-height: 1.2;
+    margin-bottom: 6px;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
