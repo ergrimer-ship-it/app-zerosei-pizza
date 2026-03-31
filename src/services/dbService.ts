@@ -151,6 +151,13 @@ export async function createUserProfile(profile: Omit<UserProfile, 'id' | 'creat
     return docRef.id;
 }
 
+// Crea profilo usando UID Firebase Auth come ID documento
+export async function createUserProfileWithUid(uid: string, profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> {
+    const userRef = doc(db, 'users', uid);
+    await setDoc(userRef, { ...profile, createdAt: Timestamp.now(), updatedAt: Timestamp.now() });
+}
+
+
 export async function updateUserProfile(id: string, updates: Partial<UserProfile>): Promise<void> {
     const userRef = doc(db, 'users', id);
     // Ensure dates are Timestamps if passed as updates

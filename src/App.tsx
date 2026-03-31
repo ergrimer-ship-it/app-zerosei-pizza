@@ -8,14 +8,16 @@ import ProductDetailScreen from './components/ProductDetailScreen';
 import CartScreen from './components/CartScreen';
 import ProfileScreen from './components/ProfileScreen';
 import NewsOffersScreen from './components/NewsOffersScreen';
-import FavoritesScreen from './components/FavoritesScreen'; // New Import
+import FavoritesScreen from './components/FavoritesScreen';
 import OfferDetailScreen from './components/OfferDetailScreen';
 import FidelityCardScreen from './components/FidelityCardScreen';
 import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
-import { updateUserProfile } from './services/dbService';
+import { getUserProfile } from './services/dbService';
+import { auth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { useTheme } from './hooks/useTheme';
 import DebugProducts from './components/DebugProducts';
 import UpdatePrompt from './components/UpdatePrompt';
@@ -28,29 +30,33 @@ function App() {
     // Carica tema personalizzato
     useTheme();
 
-    // Carica carrello, profilo utente e stato admin all'avvio
     useEffect(() => {
-        console.log('App Version: v1.2.0 - Favorites Feature');
+        console.log('App Version: v1.3.0 - Firebase Auth');
         const savedCart = loadCart();
         setCart(savedCart);
-
-        // Carica profilo utente da localStorage
-        const savedProfile = localStorage.getItem('user_profile');
-        if (savedProfile) {
-            const profile = JSON.parse(savedProfile);
-            setUserProfile(profile);
-
-            // Aggiorna ultimo accesso su Firestore (se c'è un ID valido)
-            if (profile.id && !profile.id.startsWith('temp_')) {
-                updateUserProfile(profile.id, { lastAccess: new Date() })
-                    .catch(err => console.error("Error updating last access:", err));
-            }
-        }
 
         // Verifica autenticazione admin
         const adminAuth = localStorage.getItem('admin_authenticated');
         setIsAdminAuthenticated(adminAuth === 'true');
+
+        // Ascolta lo stato di autenticazione Firebase
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                try {
+                    const profile = await getUserProfile(firebaseUser.uid);
+                    setUserProfile(profile);
+                } catch (err) {
+                    console.error('Errore caricamento profilo:', err);
+                    setUserProfile(null);
+                }
+            } else {
+                setUserProfile(null);
+            }
+        });
+
+        return () => unsubscribe();
     }, []);
+
 
     const handleAdminLogin = () => {
         setIsAdminAuthenticated(true);

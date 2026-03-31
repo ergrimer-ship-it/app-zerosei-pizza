@@ -5,6 +5,16 @@ import { doc, getDoc, collection, query, where, getDocs, addDoc, serverTimestamp
 import type { NewsPromotion, UserProfile } from '../types';
 import './OfferDetailScreen.css';
 
+const COUPON_DURATION_SECONDS = 3600; // 1 ora
+
+// Utente "nuovo" = registrato da meno di 30 giorni
+const isNewUser = (profile: UserProfile | null): boolean => {
+    if (!profile?.createdAt) return false;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return new Date(profile.createdAt) >= thirtyDaysAgo;
+};
+
 interface OfferDetailScreenProps {
     userProfile: UserProfile | null;
 }
@@ -19,10 +29,31 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const [existingCoupon, setExistingCoupon] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const [dailyLimitReached, setDailyLimitReached] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
     useEffect(() => {
         loadOffer();
     }, [id, userProfile]);
+
+    // Conto alla rovescia: aggiorna ogni secondo finché il coupon è attivo
+    useEffect(() => {
+        if (!existingCoupon?.createdAt || existingCoupon.status !== 'active') {
+            setTimeLeft(null);
+            return;
+        }
+        const createdAt = existingCoupon.createdAt.toDate
+            ? existingCoupon.createdAt.toDate()
+            : new Date(existingCoupon.createdAt);
+        const expiresAt = new Date(createdAt.getTime() + COUPON_DURATION_SECONDS * 1000);
+
+        const update = () => {
+            const remaining = Math.floor((expiresAt.getTime() - Date.now()) / 1000);
+            setTimeLeft(Math.max(0, remaining));
+        };
+        update();
+        const interval = setInterval(update, 1000);
+        return () => clearInterval(interval);
+    }, [existingCoupon]);
 
     // Controllo preventivo del limite giornaliero
     useEffect(() => {
@@ -59,6 +90,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                     showAsPopup: data.showAsPopup,
                     type: data.type || 'promotion',
                     activeDays: data.activeDays || [],
+                    newUsersOnly: data.newUsersOnly || false,
                     createdAt: data.createdAt?.toDate() || new Date(),
                     updatedAt: data.updatedAt?.toDate() || new Date(),
                 };
@@ -190,6 +222,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             // Step 3: Genera nuovo codice
             const newCode = generateRandomCode();
+            const activatedAt = new Date(); // timestamp locale per il timer
 
             // Salva in Firestore
             const couponData = {
@@ -203,9 +236,9 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             await addDoc(collection(db, 'GeneratedCoupons'), couponData);
 
-            // Mostra codice
+            // Mostra codice — usa il timestamp locale per il conto alla rovescia
             setGeneratedCode(newCode);
-            setExistingCoupon({ ...couponData, code: newCode });
+            setExistingCoupon({ ...couponData, createdAt: { toDate: () => activatedAt }, code: newCode });
         } catch (err) {
             console.error('Error activating offer:', err);
             setError('Errore nell\'attivazione dell\'offerta. Riprova.');
@@ -270,6 +303,27 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const isValid = new Date() >= new Date(offer.validFrom) && new Date() <= new Date(offer.validTo);
     const isNews = offer.type === 'news';
 
+    // Controllo offerta nuovi utenti
+    if (!isNews && offer.newUsersOnly && userProfile && !isNewUser(userProfile)) {
+        return (
+            <div className="offer-detail-screen fade-in">
+                <button className="back-button" onClick={() => navigate('/news')}>
+                    ← Torna alle offerte
+                </button>
+                <div className="offer-detail-card">
+                    <div className="login-prompt">
+                        <span className="lock-icon">🆕</span>
+                        <h2>Offerta Riservata ai Nuovi Iscritti</h2>
+                        <p>Questa promozione è disponibile solo per i clienti che si sono registrati negli ultimi 30 giorni.</p>
+                        <button className="btn btn-text" style={{ marginTop: '10px' }} onClick={() => navigate('/news')}>
+                            Torna alle offerte
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     // Controllo giorni attivi
     const DAY_NAMES_FULL = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
     const hasActiveDays = offer.activeDays && offer.activeDays.length > 0;
@@ -278,6 +332,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
     const activeDayNames = hasActiveDays
         ? offer.activeDays!.map(d => DAY_NAMES_FULL[d]).join(', ')
         : 'Tutti i giorni';
+
 
     return (
         <div className="offer-detail-screen fade-in">
@@ -344,16 +399,48 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                             {/* Codice attivo (esistente o appena generato) */}
                             {generatedCode && (!existingCoupon || existingCoupon.status === 'active') && (
                                 <div className="coupon-generated">
-                                    <div className="coupon-box">
-                                        <h2>🎉 Offerta Attivata!</h2>
-                                        <div className="coupon-code">
-                                            <span className="code-label">Il tuo codice è:</span>
-                                            <span className="code-value">{generatedCode}</span>
+                                    {timeLeft === 0 ? (
+                                        <div className="coupon-expired-box">
+                                            <span className="coupon-expired-icon">⏰</span>
+                                            <h3>Coupon Scaduto</h3>
+                                            <p>Il tuo codice non è più valido. Potrai attivare una nuova offerta domani.</p>
                                         </div>
-                                        <p className="coupon-instructions">
-                                            📱 <strong>Mostra questo codice in cassa</strong> per ricevere lo sconto
-                                        </p>
-                                    </div>
+                                    ) : (
+                                        <div className="coupon-box">
+                                            <h2>🎉 Offerta Attivata!</h2>
+                                            <div className="coupon-code">
+                                                <span className="code-label">Il tuo codice è:</span>
+                                                <span className="code-value">{generatedCode}</span>
+                                            </div>
+                                            <p className="coupon-instructions">
+                                                📱 <strong>Mostra questo codice in cassa</strong> per ricevere lo sconto
+                                            </p>
+                                            {/* Conto alla rovescia */}
+                                            <div className="coupon-timer">
+                                                {timeLeft === null ? (
+                                                    <span className="coupon-timer-text">⏱ Calcolo scadenza...</span>
+                                                ) : (() => {
+                                                    const mins = Math.floor(timeLeft / 60);
+                                                    const secs = timeLeft % 60;
+                                                    const pct = (timeLeft / COUPON_DURATION_SECONDS) * 100;
+                                                    const colorClass = timeLeft > 1800 ? 'timer-green' : timeLeft > 600 ? 'timer-yellow' : 'timer-red';
+                                                    return (
+                                                        <>
+                                                            <div className={`coupon-timer-bar-track`}>
+                                                                <div
+                                                                    className={`coupon-timer-bar-fill ${colorClass}`}
+                                                                    style={{ width: `${pct}%` }}
+                                                                />
+                                                            </div>
+                                                            <span className={`coupon-timer-text ${colorClass}`}>
+                                                                ⏱ Valido ancora per {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+                                                            </span>
+                                                        </>
+                                                    );
+                                                })()}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
