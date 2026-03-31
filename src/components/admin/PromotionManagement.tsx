@@ -160,7 +160,14 @@ function PromotionManagement({ mode = 'promotion' }: PromotionManagementProps) {
                 <h2>Gestione {mode === 'news' ? 'Novità' : 'Promozioni'}</h2>
                 <button
                     className="btn btn-primary"
-                    onClick={() => setShowForm(!showForm)}
+                    onClick={() => {
+                        if (showForm) {
+                            resetForm(); // chiude e resetta tutto
+                        } else {
+                            resetForm(); // assicura form pulito anche all'apertura
+                            setShowForm(true);
+                        }
+                    }}
                 >
                     {showForm ? '✕ Chiudi' : `+ Nuova ${itemLabel}`}
                 </button>
