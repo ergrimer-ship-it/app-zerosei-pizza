@@ -50,7 +50,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
 
     const showMessage = (type: 'success' | 'error', text: string) => {
         setMessage({ type, text });
-        setTimeout(() => setMessage(null), 4000);
+        setTimeout(() => setMessage(null), 5000); // aumentato a 5s per leggere i popup al centro
     };
 
 
@@ -115,7 +115,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         }
         try {
             await sendPasswordResetEmail(auth, formData.email);
-            showMessage('success', 'Email per il ripristino inviata! Controlla la tua casella di posta.');
+            showMessage('success', 'Email per il ripristino inviata! Controlla la tua casella di posta (inclusa la cartella Spam / Posta Indesiderata).');
         } catch (error: any) {
             if (error.code === 'auth/user-not-found') {
                 showMessage('error', 'Nessun account trovato per questa email.');
