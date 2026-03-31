@@ -6,6 +6,7 @@ import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
+    sendPasswordResetEmail,
 } from 'firebase/auth';
 import './ProfileScreen.css';
 
@@ -106,6 +107,26 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         }
     };
 
+    // ─── RECUPERO PASSWORD ─────────────────────────────────────────
+    const handleResetPassword = async () => {
+        if (!formData.email) {
+            showMessage('error', 'Inserisci il tuo indirizzo email prima di cliccare su "Password dimenticata?".');
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, formData.email);
+            showMessage('success', 'Email per il ripristino inviata! Controlla la tua casella di posta.');
+        } catch (error: any) {
+            if (error.code === 'auth/user-not-found') {
+                showMessage('error', 'Nessun account trovato per questa email.');
+            } else if (error.code === 'auth/missing-email' || error.code === 'auth/invalid-email') {
+                showMessage('error', 'Inserisci un indirizzo email valido.');
+            } else {
+                showMessage('error', `Errore: ${error.message}`);
+            }
+        }
+    };
+
     // ─── LOGOUT ───────────────────────────────────────────────────
     const handleLogout = async () => {
         await signOut(auth);
@@ -162,6 +183,9 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                             <div className="form-group">
                                 <label htmlFor="login-password">Password *</label>
                                 <input type="password" id="login-password" name="password" value={formData.password} onChange={handleChange} placeholder="La tua password" className="input" required />
+                            </div>
+                            <div style={{ textAlign: 'right', marginTop: '-10px' }}>
+                                <button type="button" className="btn btn-text" onClick={handleResetPassword} style={{ fontSize: '0.85rem', padding: '0' }}>Password dimenticata?</button>
                             </div>
                             <div className="form-actions">
                                 <button type="submit" className="btn btn-primary">Accedi</button>
