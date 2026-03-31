@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Product, Cart, PizzaModification } from '../types';
 import { addToCart } from '../services/cartService';
-import { openWhatsApp } from '../services/whatsappService';
 import { getProductById, addFavorite, updateFavorite } from '../services/dbService';
 import { getModifications } from '../services/modificationService';
 import './ProductDetailScreen.css';
@@ -131,27 +130,7 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
         }
     };
 
-    const handleOrderNow = () => {
-        if (product) {
-            const tempCart = {
-                items: [{ product, quantity, notes, modifications: selectedModifications }],
-                total: getTotalPrice()
-            };
 
-            const userProfile = localStorage.getItem('user_profile');
-            let userInfo;
-
-            if (userProfile) {
-                const profile = JSON.parse(userProfile);
-                userInfo = {
-                    name: `${profile.firstName} ${profile.lastName}`,
-                    phone: profile.phone
-                };
-            }
-
-            openWhatsApp(tempCart, userInfo);
-        }
-    };
 
     const handleSaveFavorite = async () => {
         const userProfileStr = localStorage.getItem('user_profile');
@@ -308,10 +287,6 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
                 <div className="action-buttons">
                     <button className="btn btn-primary add-to-cart-btn" onClick={handleAddToCart}>
                         Aggiungi al carrello - €{getTotalPrice().toFixed(2)}
-                    </button>
-
-                    <button className="btn btn-whatsapp order-now-btn" onClick={handleOrderNow}>
-                        Ordina subito su WhatsApp
                     </button>
 
                     <button className="btn btn-favorite save-favorite-btn" onClick={handleSaveFavorite}>
