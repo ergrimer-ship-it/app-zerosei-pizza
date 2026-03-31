@@ -15,7 +15,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
-import { getUserProfile, updateUserProfile } from './services/dbService';
+import { getUserProfile, updateUserProfile, createUserProfileWithUid } from './services/dbService';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useTheme } from './hooks/useTheme';
@@ -49,7 +49,31 @@ function App() {
                         // Aggiorna silenziosamente l'ultimo accesso
                         updateUserProfile(firebaseUser.uid, { lastAccess: new Date() }).catch(e => console.error('Errore sync ultimo accesso:', e));
                     } else {
-                        setUserProfile(null);
+                        console.warn('Utente trovato in Autenticazione ma non nel Database. Ricreo il profilo automaticamente...');
+                        const newProfile = {
+                            firstName: 'Utente',
+                            lastName: 'Recuperato',
+                            email: firebaseUser.email || '',
+                            phone: '',
+                            loyaltyPoints: 0,
+                            lastAccess: new Date()
+                        };
+                        try {
+                            await createUserProfileWithUid(firebaseUser.uid, newProfile);
+                            // Set the newly created profile into application state
+                            const now = new Date();
+                            setUserProfile({ 
+                                id: firebaseUser.uid, 
+                                ...newProfile,
+                                createdAt: now,
+                                updatedAt: now
+                            });
+                        } catch (createErr) {
+                            console.error('Errore nella rigenerazione del profilo:', createErr);
+                            setUserProfile(null);
+                            // Fallback sign out se non si riesce a creare
+                            auth.signOut();
+                        }
                     }
                 } catch (err) {
                     console.error('Errore caricamento profilo:', err);
