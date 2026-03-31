@@ -3,13 +3,14 @@ import { UserProfile } from '../types';
 import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
 import { clearCart } from '../services/cartService';
 import { Cart } from '../types';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
     signOut,
     sendPasswordResetEmail,
 } from 'firebase/auth';
+import { collection, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import './ProfileScreen.css';
 
 interface ProfileScreenProps {
@@ -75,13 +76,52 @@ function ProfileScreen({ userProfile, setUserProfile, setCart }: ProfileScreenPr
         }
         try {
             const cred = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-            await createUserProfileWithUid(cred.user.uid, {
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                phone: formData.phone,
-                email: formData.email,
-                loyaltyPoints: 0,
-            });
+            
+            // Cerca se esiste già un vecchio profilo nel database creato prima dell'introduzione delle password
+            const usersRef = collection(db, 'users');
+            const qEmail = query(usersRef, where('email', '==', formData.email.toLowerCase()));
+            const emailSnap = await getDocs(qEmail);
+            
+            let oldDocId = null;
+            let oldProfileData = null;
+            
+            if (!emailSnap.empty) {
+                oldDocId = emailSnap.docs[0].id;
+                oldProfileData = emailSnap.docs[0].data();
+            } else {
+                // Tenta fallback col telefono
+                const qPhone = query(usersRef, where('phone', '==', formData.phone));
+                const phoneSnap = await getDocs(qPhone);
+                if (!phoneSnap.empty) {
+                    oldDocId = phoneSnap.docs[0].id;
+                    oldProfileData = phoneSnap.docs[0].data();
+                }
+            }
+            
+            if (oldDocId && oldProfileData && oldDocId !== cred.user.uid) {
+                // Migra i dati vecchi sul nuovo UID collegato all'autenticazione
+                await createUserProfileWithUid(cred.user.uid, {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    email: formData.email,
+                    loyaltyPoints: oldProfileData.loyaltyPoints || 0,
+                    cassaCloudId: oldProfileData.cassaCloudId || null,
+                    // Passiamo la data vecchia se esiste così teniamo traccia di quando era veramente cliente
+                });
+                // Rimuove il documento orfano vecchio così non ci sono account doppi in dashboard
+                try { await deleteDoc(doc(db, 'users', oldDocId)); } catch(e) { console.error('Errore delete old doc', e); }
+            } else {
+                // Nessun vecchio doc: crea normalmente un profilo intonso
+                await createUserProfileWithUid(cred.user.uid, {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    phone: formData.phone,
+                    email: formData.email,
+                    loyaltyPoints: 0,
+                });
+            }
+            
             showMessage('success', 'Registrazione completata! Benvenuto 🎉');
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
