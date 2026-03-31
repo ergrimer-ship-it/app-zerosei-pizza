@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
-import { auth, db, functions } from '../firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
+import { auth } from '../firebase';
 import {
     createUserWithEmailAndPassword,
     signInWithEmailAndPassword,
@@ -22,8 +20,6 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     const [authMode, setAuthMode] = useState<AuthMode>('login');
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [syncError, setSyncError] = useState<string | null>(null);
 
     const [formData, setFormData] = useState({
         firstName: '',
@@ -138,42 +134,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
         }
     };
 
-    // ─── SYNC FIDELITY ────────────────────────────────────────────
-    const handleSyncFidelity = async () => {
-        if (!userProfile) return;
-        setIsSyncing(true);
-        setSyncError(null);
-        try {
-            const searchAndSync = httpsCallable(functions, 'searchAndSyncFidelityPoints');
-            const result = await searchAndSync({
-                email: userProfile.email,
-                firstName: userProfile.firstName,
-                lastName: userProfile.lastName,
-                phone: userProfile.phone
-            });
-            const data = result.data as any;
-            if (data.success) {
-                const userRef = doc(db, 'users', userProfile.id);
-                await updateDoc(userRef, {
-                    cassaCloudId: data.customerId,
-                    loyaltyPoints: data.points,
-                    loyaltyPointsLastSync: new Date().toISOString()
-                });
-                setUserProfile({ ...userProfile, cassaCloudId: data.customerId, loyaltyPoints: data.points, loyaltyPointsLastSync: new Date().toISOString() } as any);
-                showMessage('success', `Fidelity Card collegata! Punti: ${data.points}`);
-            } else {
-                setSyncError(data.message || 'Errore durante la ricerca');
-                if (data.code === 'CUSTOMER_NOT_FOUND') {
-                    showMessage('error', 'Nessuna Fidelity Card trovata. Chiedi in cassa!');
-                }
-            }
-        } catch (error: any) {
-            setSyncError('Errore di connessione. Riprova più tardi.');
-            showMessage('error', 'Errore di connessione durante la sincronizzazione.');
-        } finally {
-            setIsSyncing(false);
-        }
-    };
+
 
     // ─── RENDER: utente NON loggato ───────────────────────────────
     if (!userProfile) {
@@ -248,8 +209,7 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                 </div>
 
                 <div className="info-box">
-                    <h3>ℹ️ Perché registrarsi?</h3>
-                    <p>Con un account puoi attivare i coupon sconto e collegare la tua Fidelity Card per accumulare punti.</p>
+                    <p>Con un account puoi attivare i coupon sconto per i tuoi acquisti.</p>
                 </div>
             </div>
         );
@@ -304,40 +264,10 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
                 )}
             </div>
 
-            {/* Fidelity Card */}
-            {!isEditing && (
-                <div className="profile-card">
-                    <h3>💳 Fidelity Card ZeroSei</h3>
-                    {userProfile.cassaCloudId ? (
-                        <div className="fidelity-info">
-                            <div className="fidelity-points-display">
-                                <span className="fidelity-points-label">I tuoi Punti:</span>
-                                <span className="fidelity-points-value">{userProfile.loyaltyPoints || 0}</span>
-                            </div>
-                            <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
-                                {userProfile.loyaltyPointsLastSync
-                                    ? `Aggiornato: ${new Date(userProfile.loyaltyPointsLastSync).toLocaleString('it-IT')}`
-                                    : ''}
-                            </p>
-                            <button onClick={handleSyncFidelity} disabled={isSyncing} className="btn btn-secondary" style={{ marginTop: '10px', width: '100%' }}>
-                                {isSyncing ? '🔄 Sincronizzazione...' : '🔄 Aggiorna Punti'}
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="fidelity-connect">
-                            <p>Per collegare la tua Fidelity Card, comunica alla pizzeria l'email usata nel profilo. Una volta inserita nel gestionale, premi il pulsante qui sotto.</p>
-                            <button onClick={handleSyncFidelity} disabled={isSyncing} className="btn btn-primary" style={{ marginTop: '10px', width: '100%' }}>
-                                {isSyncing ? '🔍 Ricerca in corso...' : '🔗 Collega Fidelity Card'}
-                            </button>
-                            {syncError && <p style={{ color: 'red', marginTop: '10px', fontSize: '0.9rem' }}>{syncError}</p>}
-                        </div>
-                    )}
-                </div>
-            )}
+
 
             <div className="info-box">
-                <h3>ℹ️ Perché serve il profilo?</h3>
-                <p>I tuoi dati servono per pre-compilare i messaggi WhatsApp per gli ordini e per associare la tua Fidelity Card.</p>
+                    <p>I tuoi dati servono per pre-compilare i messaggi WhatsApp per gli ordini in modo semplice e veloce.</p>
             </div>
         </div>
     );
