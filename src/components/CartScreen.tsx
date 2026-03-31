@@ -76,14 +76,16 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
             return;
         }
 
-        // Validate delivery options
+        // Validate delivery/pickup time (now mandatory for both)
+        if (!pickupTime) {
+            alert('Per favore seleziona un orario preferito per preparare il tuo ordine.');
+            return;
+        }
+
+        // Validate delivery address
         if (deliveryType === 'delivery') {
             if (!street || !city || !doorbell) {
                 alert('Per favore compila tutti i campi dell\'indirizzo di consegna.');
-                return;
-            }
-            if (!pickupTime) {
-                alert('Per favore seleziona un orario di consegna.');
                 return;
             }
         }
@@ -274,13 +276,14 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
 
                     {deliveryType === 'pickup' && (
                         <div className="pickup-details">
-                            <label htmlFor="pickupTime">Orario Preferito (opzionale)</label>
+                            <label htmlFor="pickupTime">Orario Preferito *</label>
                             <input
                                 type="time"
                                 id="pickupTime"
                                 className="input"
                                 value={pickupTime}
                                 onChange={(e) => setPickupTime(e.target.value)}
+                                required
                             />
                         </div>
                     )}
