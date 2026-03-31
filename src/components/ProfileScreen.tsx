@@ -144,6 +144,12 @@ function ProfileScreen({ userProfile, setUserProfile, setCart }: ProfileScreenPr
             confirmPassword: '',
         });
         setAuthMode('login');
+
+        // Forza un ricaricamento completo della pagina per pulire cache e memoria PWA
+        window.location.href = '/';
+        setTimeout(() => {
+            window.location.reload();
+        }, 100);
     };
 
     // ─── MODIFICA PROFILO ─────────────────────────────────────────
