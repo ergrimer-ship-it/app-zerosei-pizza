@@ -15,7 +15,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
-import { getUserProfile } from './services/dbService';
+import { getUserProfile, updateUserProfile } from './services/dbService';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useTheme } from './hooks/useTheme';
@@ -44,7 +44,13 @@ function App() {
             if (firebaseUser) {
                 try {
                     const profile = await getUserProfile(firebaseUser.uid);
-                    setUserProfile(profile);
+                    if (profile) {
+                        setUserProfile(profile);
+                        // Aggiorna silenziosamente l'ultimo accesso
+                        updateUserProfile(firebaseUser.uid, { lastAccess: new Date() }).catch(e => console.error('Errore sync ultimo accesso:', e));
+                    } else {
+                        setUserProfile(null);
+                    }
                 } catch (err) {
                     console.error('Errore caricamento profilo:', err);
                     setUserProfile(null);
