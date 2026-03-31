@@ -104,7 +104,7 @@ function App() {
                             <Route path="/menu/:category" element={<ProductListScreen cart={cart} setCart={setCart} />} />
                             <Route path="/product/:id" element={<ProductDetailScreen cart={cart} setCart={setCart} />} />
                             <Route path="/cart" element={<CartScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
-                            <Route path="/profile" element={<ProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} />} />
+                            <Route path="/profile" element={<ProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} setCart={setCart} />} />
                             <Route path="/news" element={<NewsOffersScreen />} />
                             <Route path="/favorites" element={<FavoritesScreen cart={cart} setCart={setCart} />} />
                             <Route path="/offer/:id" element={<OfferDetailScreen userProfile={userProfile} />} />

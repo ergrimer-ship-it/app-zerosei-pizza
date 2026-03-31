@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
 import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
+import { clearCart } from '../services/cartService';
+import { Cart } from '../types';
 import { auth } from '../firebase';
 import {
     createUserWithEmailAndPassword,
@@ -13,11 +15,12 @@ import './ProfileScreen.css';
 interface ProfileScreenProps {
     userProfile: UserProfile | null;
     setUserProfile: (profile: UserProfile | null) => void;
+    setCart: (cart: Cart) => void;
 }
 
 type AuthMode = 'login' | 'register';
 
-function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
+function ProfileScreen({ userProfile, setUserProfile, setCart }: ProfileScreenProps) {
     const [authMode, setAuthMode] = useState<AuthMode>('login');
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -131,6 +134,16 @@ function ProfileScreen({ userProfile, setUserProfile }: ProfileScreenProps) {
     const handleLogout = async () => {
         await signOut(auth);
         setUserProfile(null);
+        setCart(clearCart());
+        setFormData({
+            firstName: '',
+            lastName: '',
+            phone: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+        });
+        setAuthMode('login');
     };
 
     // ─── MODIFICA PROFILO ─────────────────────────────────────────
