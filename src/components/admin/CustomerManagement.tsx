@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAllUsers } from '../../services/dbService';
 import { getLoyaltyPoints, linkCustomerProfile } from '../../services/cassaCloudService'; // Import sync services
 import { db } from '../../firebase';
-import { doc, updateDoc } from 'firebase/firestore'; // Import firestore functions
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore'; // Import firestore functions
 import { UserProfile } from '../../types';
 import './CustomerManagement.css';
 
@@ -27,6 +27,23 @@ function CustomerManagement() {
             alert('Errore nel caricamento dei clienti');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteUser = async (customer: UserProfile) => {
+        if (!window.confirm(`Attenzione: Sei sicuro di voler eliminare definitivamente il cliente "${customer.firstName} ${customer.lastName}" (${customer.email})?\n\nQuesta operazione rimuoverà irreparabilmente il profilo dal database dell'app (anche se resterà in Cassa Cloud).`)) {
+            return;
+        }
+
+        try {
+            if (customer.id) {
+                await deleteDoc(doc(db, 'users', customer.id));
+                setCustomers(prev => prev.filter(c => c.id !== customer.id));
+                alert('Cliente eliminato con successo.');
+            }
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            alert("Errore durante l'eliminazione del cliente.");
         }
     };
 
@@ -223,6 +240,7 @@ function CustomerManagement() {
                                 <th>Stato Sync</th>
                                 <th>Registrato il</th>
                                 <th>Ultimo Accesso</th>
+                                <th>Azioni</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -261,6 +279,15 @@ function CustomerManagement() {
                                         <span className="registration-date">
                                             {customer.lastAccess ? new Date(customer.lastAccess).toLocaleDateString('it-IT') + ' ' + new Date(customer.lastAccess).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : '-'}
                                         </span>
+                                    </td>
+                                    <td className="actions-cell">
+                                        <button
+                                            className="btn-icon btn-delete"
+                                            onClick={() => handleDeleteUser(customer)}
+                                            title="Elimina cliente"
+                                        >
+                                            🗑️
+                                        </button>
                                     </td>
                                 </tr>
                             ))}
