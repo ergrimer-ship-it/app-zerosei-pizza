@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FavoriteItem, Cart } from '../types';
+import { FavoriteItem, Cart, UserProfile } from '../types';
 import { getFavoritesByUser, removeFavorite } from '../services/dbService';
 import { addToCart } from '../services/cartService';
 import './FavoritesScreen.css';
@@ -8,9 +8,10 @@ import './FavoritesScreen.css';
 interface FavoritesScreenProps {
     cart: Cart;
     setCart: (cart: Cart) => void;
+    userProfile: UserProfile | null;
 }
 
-function FavoritesScreen({ cart, setCart }: FavoritesScreenProps) {
+function FavoritesScreen({ cart, setCart, userProfile }: FavoritesScreenProps) {
     const navigate = useNavigate();
     const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,14 +21,12 @@ function FavoritesScreen({ cart, setCart }: FavoritesScreenProps) {
     }, []);
 
     const loadFavorites = async () => {
-        const userProfileStr = localStorage.getItem('user_profile');
-        if (!userProfileStr) {
+        if (!userProfile) {
             setLoading(false);
             return;
         }
 
         try {
-            const userProfile = JSON.parse(userProfileStr);
             if (userProfile.id) {
                 const data = await getFavoritesByUser(userProfile.id);
                 setFavorites(data);
@@ -65,8 +64,7 @@ function FavoritesScreen({ cart, setCart }: FavoritesScreenProps) {
 
     if (loading) return <div className="favorites-screen"><div className="loading">Caricamento...</div></div>;
 
-    const userProfileStr = localStorage.getItem('user_profile');
-    if (!userProfileStr) {
+    if (!userProfile) {
         return (
             <div className="favorites-screen fade-in">
                 <div className="login-prompt">

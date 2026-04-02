@@ -150,7 +150,11 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
                         <div className="card-body">
                             <div className="points-display">
                                 <span className="points-value">
-                                    {loyaltyData?.points || 0}
+                                    {isSyncing ? (
+                                        <div className="spinner" aria-label="Caricamento punti"></div>
+                                    ) : (
+                                        loyaltyData?.points || 0
+                                    )}
                                 </span>
                                 <span className="points-label">Punti</span>
                             </div>
@@ -207,22 +211,21 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="fidelity-actions" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <button 
-                        onClick={handleSyncFidelity} 
-                        disabled={isSyncing} 
-                        className="btn btn-primary" 
-                        style={{ width: '100%', maxWidth: '300px' }}
-                    >
-                        {isSyncing ? '🔄 Sincronizzazione...' : '🔄 Sincronizza Fidelity'}
-                    </button>
-                    {syncMessage && (
-                        <div style={{ marginTop: '10px', fontSize: '0.9rem', color: syncMessage.type === 'success' ? '#2e7d32' : '#d32f2f', textAlign: 'center', backgroundColor: syncMessage.type === 'success' ? '#e8f5e9' : '#ffebee', padding: '10px', borderRadius: '8px', width: '100%', maxWidth: '300px' }}>
-                            {syncMessage.text}
-                        </div>
-                    )}
-                </div>
+            <div className="fidelity-actions-container">
+                <button 
+                    onClick={handleSyncFidelity} 
+                    disabled={isSyncing} 
+                    className="btn btn-sync-fidelity" 
+                >
+                    {isSyncing ? 'Attendere...' : '🔄 Aggiorna Punti'}
+                </button>
+                {syncMessage && (
+                    <div className={`sync-message ${syncMessage.type}`}>
+                        {syncMessage.text}
+                    </div>
+                )}
             </div>
 
             <div className="rewards-section">

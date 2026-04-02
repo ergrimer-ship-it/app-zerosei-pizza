@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { getAllPromotions } from '../services/dbService';
-import type { NewsPromotion } from '../types';
+import type { NewsPromotion, UserProfile } from '../types';
 import './NewsOffersScreen.css';
 
 interface CouponStatus {
@@ -19,7 +19,11 @@ const isNewUser = (profile: { createdAt?: Date | string } | null): boolean => {
     return new Date(profile.createdAt) >= thirtyDaysAgo;
 };
 
-function NewsOffersScreen() {
+interface NewsOffersScreenProps {
+    userProfile: UserProfile | null;
+}
+
+function NewsOffersScreen({ userProfile }: NewsOffersScreenProps) {
     const navigate = useNavigate();
     const [promotions, setPromotions] = useState<NewsPromotion[]>([]);
     const [loading, setLoading] = useState(true);
@@ -35,14 +39,11 @@ function NewsOffersScreen() {
             const allActive = data.filter(p => p.active && isPromotionValid(p));
 
             // Carica stato coupon utente (solo se loggato)
-            const savedProfile = localStorage.getItem('user_profile');
-            let profile: any = null;
             let statusMap: Record<string, CouponStatus> = {};
 
-            if (savedProfile) {
-                profile = JSON.parse(savedProfile);
-                if (profile.id && !profile.id.startsWith('temp_')) {
-                    statusMap = await fetchUserCoupons(profile.id, allActive);
+            if (userProfile) {
+                if (userProfile.id && !userProfile.id.startsWith('temp_')) {
+                    statusMap = await fetchUserCoupons(userProfile.id, allActive);
                     setCouponStatusMap(statusMap);
                 }
             }
@@ -50,9 +51,12 @@ function NewsOffersScreen() {
             // Filtra offerte newUsersOnly:
             // - Nascondi se l'utente non è nuovo
             // - Nascondi se il coupon è già stato riscattato
+            // Filtra offerte newUsersOnly:
+            // - Nascondi se l'utente non è nuovo
+            // - Nascondi se il coupon è già stato riscattato
             const visiblePromotions = allActive.filter(p => {
                 if (!p.newUsersOnly) return true; // offerta normale, sempre visibile
-                if (!isNewUser(profile)) return false; // utente non nuovo
+                if (!isNewUser(userProfile)) return false; // utente non nuovo
                 const coupon = statusMap[p.id];
                 if (coupon?.status === 'redeemed') return false; // già riscattata
                 return true;

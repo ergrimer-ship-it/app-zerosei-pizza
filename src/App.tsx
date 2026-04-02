@@ -15,7 +15,7 @@ import AdminLogin from './components/AdminLogin';
 import AdminDashboard from './components/AdminDashboard';
 import { Cart, UserProfile } from './types';
 import { loadCart } from './services/cartService';
-import { getUserProfile, updateUserProfile, createUserProfileWithUid } from './services/dbService';
+import { getUserProfile, updateUserProfile } from './services/dbService';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useTheme } from './hooks/useTheme';
@@ -43,7 +43,15 @@ function App() {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
-                    const profile = await getUserProfile(firebaseUser.uid);
+                    let profile = await getUserProfile(firebaseUser.uid);
+                    
+                    // Se il profilo non c'è, potrebbe essere una registrazione in corso che non ha ancora scritto a DB. 
+                    // Aspettiamo 2 secondi e riproviamo prima di forzare la creazione.
+                    if (!profile) {
+                        await new Promise(resolve => setTimeout(resolve, 2000));
+                        profile = await getUserProfile(firebaseUser.uid);
+                    }
+
                     if (profile) {
                         setUserProfile(profile);
                         // Aggiorna silenziosamente l'ultimo accesso
@@ -59,7 +67,15 @@ function App() {
                             lastAccess: new Date()
                         };
                         try {
-                            await createUserProfileWithUid(firebaseUser.uid, newProfile);
+                            // Uso merge per evitare di sovrascrivere se per caso è stato creato proprio un istante fa
+                            const { doc, setDoc, Timestamp } = await import('firebase/firestore');
+                            const { db } = await import('./firebase');
+                            await setDoc(doc(db, 'users', firebaseUser.uid), { 
+                                ...newProfile, 
+                                createdAt: Timestamp.now(), 
+                                updatedAt: Timestamp.now() 
+                            }, { merge: true });
+                            
                             // Set the newly created profile into application state
                             const now = new Date();
                             setUserProfile({ 
@@ -123,14 +139,14 @@ function App() {
                 <Route path="*" element={
                     <Layout cart={cart} userProfile={userProfile}>
                         <Routes>
-                            <Route path="/" element={<HomeScreen />} />
+                            <Route path="/" element={<HomeScreen userProfile={userProfile} />} />
                             <Route path="/menu" element={<MenuScreen />} />
                             <Route path="/menu/:category" element={<ProductListScreen cart={cart} setCart={setCart} />} />
-                            <Route path="/product/:id" element={<ProductDetailScreen cart={cart} setCart={setCart} />} />
+                            <Route path="/product/:id" element={<ProductDetailScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
                             <Route path="/cart" element={<CartScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
                             <Route path="/profile" element={<ProfileScreen userProfile={userProfile} setUserProfile={setUserProfile} setCart={setCart} />} />
-                            <Route path="/news" element={<NewsOffersScreen />} />
-                            <Route path="/favorites" element={<FavoritesScreen cart={cart} setCart={setCart} />} />
+                            <Route path="/news" element={<NewsOffersScreen userProfile={userProfile} />} />
+                            <Route path="/favorites" element={<FavoritesScreen cart={cart} setCart={setCart} userProfile={userProfile} />} />
                             <Route path="/offer/:id" element={<OfferDetailScreen userProfile={userProfile} />} />
                             <Route path="/fidelity" element={<FidelityCardScreen userProfile={userProfile} />} />
                             <Route path="/debug" element={<DebugProducts />} />

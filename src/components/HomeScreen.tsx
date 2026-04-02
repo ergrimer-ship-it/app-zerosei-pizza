@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { callPizzeria, getFormattedPhoneNumber } from '../services/phoneService';
 import { openWhatsApp } from '../services/whatsappService';
 import { loadCart } from '../services/cartService';
+import { UserProfile } from '../types';
 import './HomeScreen.css';
 
 interface HomeButton {
@@ -112,7 +113,11 @@ const defaultConfig: HomeConfig = {
     ]
 };
 
-function HomeScreen() {
+interface HomeScreenProps {
+    userProfile: UserProfile | null;
+}
+
+function HomeScreen({ userProfile }: HomeScreenProps) {
     const navigate = useNavigate();
     const [config, setConfig] = useState<HomeConfig>(defaultConfig);
     const [loading, setLoading] = useState(true);
@@ -152,14 +157,12 @@ function HomeScreen() {
 
     const handleWhatsAppClick = () => {
         const cart = loadCart();
-        const userProfile = localStorage.getItem('user_profile');
         let userInfo;
 
         if (userProfile) {
-            const profile = JSON.parse(userProfile);
             userInfo = {
-                name: `${profile.firstName} ${profile.lastName}`,
-                phone: profile.phone
+                name: `${userProfile.firstName} ${userProfile.lastName}`,
+                phone: userProfile.phone
             };
         }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Product, Cart, PizzaModification } from '../types';
+import { Product, Cart, PizzaModification, UserProfile } from '../types';
 import { addToCart } from '../services/cartService';
 import { getProductById, addFavorite, updateFavorite } from '../services/dbService';
 import { getModifications } from '../services/modificationService';
@@ -9,9 +9,10 @@ import './ProductDetailScreen.css';
 interface ProductDetailScreenProps {
     cart: Cart;
     setCart: (cart: Cart) => void;
+    userProfile: UserProfile | null;
 }
 
-function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
+function ProductDetailScreen({ cart, setCart, userProfile }: ProductDetailScreenProps) {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
@@ -133,8 +134,7 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
 
 
     const handleSaveFavorite = async () => {
-        const userProfileStr = localStorage.getItem('user_profile');
-        if (!userProfileStr) {
+        if (!userProfile) {
             alert('Devi aver creato un profilo per salvare i preferiti!');
             navigate('/profile');
             return;
@@ -142,7 +142,6 @@ function ProductDetailScreen({ cart, setCart }: ProductDetailScreenProps) {
 
         if (product) {
             try {
-                const userProfile = JSON.parse(userProfileStr);
                 // Fallback if ID is missing (should verify implementation of loadProfile)
                 // Assuming userProfile.id exists if loaded correctly. 
                 // However, localStorage might lack it if older version.
