@@ -52,15 +52,52 @@ function App() {
                         profile = await getUserProfile(firebaseUser.uid);
                     }
 
+                    // TENTATIVO DI RECUPERO AUTOMATICO (per profili orfani o già sovrascritti dal bug precedente)
+                    const isUtenteRecuperato = profile && profile.firstName === 'Utente' && profile.lastName === 'Recuperato';
+                    
+                    if ((!profile || isUtenteRecuperato) && firebaseUser.email) {
+                        console.warn('Profilo mancante o Utente Recuperato. Tento il ripristino dai vecchi documenti...');
+                        try {
+                            const { collection, query, where, getDocs, doc, setDoc, deleteDoc, Timestamp } = await import('firebase/firestore');
+                            const { db } = await import('./firebase');
+                            const usersRef = collection(db, 'users');
+                            
+                            // Cerca un profilo orfano con la stessa email
+                            let qEmail = query(usersRef, where('email', '==', firebaseUser.email));
+                            let emailSnap = await getDocs(qEmail);
+                            let originalDoc = emailSnap.docs.find(d => d.id !== firebaseUser.uid && d.data().firstName !== 'Utente');
+                            
+                            if (!originalDoc) {
+                                qEmail = query(usersRef, where('email', '==', firebaseUser.email.toLowerCase()));
+                                emailSnap = await getDocs(qEmail);
+                                originalDoc = emailSnap.docs.find(d => d.id !== firebaseUser.uid && d.data().firstName !== 'Utente');
+                            }
+
+                            if (originalDoc) {
+                                console.log('Documento originale trovato! Procedo al ripristino sul nuovo UID.');
+                                const oldData = originalDoc.data();
+                                await setDoc(doc(db, 'users', firebaseUser.uid), {
+                                    ...oldData,
+                                    updatedAt: Timestamp.now()
+                                }, { merge: true });
+                                
+                                try { await deleteDoc(doc(db, 'users', originalDoc.id)); } catch(e) { console.error('Fallita cancellazione orfano', e); }
+                                profile = await getUserProfile(firebaseUser.uid); // ricarica il profilo aggiornato
+                            }
+                        } catch (err) {
+                            console.error('Errore durante il recupero dei dati orfani:', err);
+                        }
+                    }
+
                     if (profile) {
                         setUserProfile(profile);
                         // Aggiorna silenziosamente l'ultimo accesso
                         updateUserProfile(firebaseUser.uid, { lastAccess: new Date() }).catch(e => console.error('Errore sync ultimo accesso:', e));
                     } else {
-                        console.warn('Utente trovato in Autenticazione ma non nel Database. Ricreo il profilo automaticamente...');
+                        console.warn('Nessun profilo esistente trovato. Creo un profilo incompleto vuoto...');
                         const newProfile = {
-                            firstName: 'Utente',
-                            lastName: 'Recuperato',
+                            firstName: 'Ospite',
+                            lastName: '',
                             email: firebaseUser.email || '',
                             phone: '',
                             loyaltyPoints: 0,
@@ -85,7 +122,7 @@ function App() {
                                 updatedAt: now
                             });
                         } catch (createErr) {
-                            console.error('Errore nella rigenerazione del profilo:', createErr);
+                            console.error('Errore nella creazione del profilo ospite:', createErr);
                             setUserProfile(null);
                             // Fallback sign out se non si riesce a creare
                             auth.signOut();
