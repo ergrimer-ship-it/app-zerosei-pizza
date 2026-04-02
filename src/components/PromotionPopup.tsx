@@ -25,10 +25,22 @@ function PromotionPopup() {
             if (popupPromotions.length > 0) {
                 const promo = popupPromotions[0]; // Show the first one
 
-                // Check if user has already seen this promotion
-                const seenPromotions = JSON.parse(localStorage.getItem('seenPromotions') || '[]');
+                // Check if user has already seen this promotion iteration
+                let seenMap: Record<string, number> = {};
+                try {
+                    const parsed = JSON.parse(localStorage.getItem('seenPromotions') || '{}');
+                    if (Array.isArray(parsed)) {
+                        parsed.forEach(id => { seenMap[id] = 9999999999999; }); // Legacy permanent hide
+                    } else {
+                        seenMap = parsed;
+                    }
+                } catch (e) { }
 
-                if (!seenPromotions.includes(promo.id)) {
+                const promoTime = promo.updatedAt ? new Date(promo.updatedAt).getTime() : 0;
+                const lastDismissedTime = seenMap[promo.id] || 0;
+
+                // Show it if it was never dismissed, OR if it was updated AFTER it was dismissed
+                if (promoTime > lastDismissedTime) {
                     setPromotion(promo);
                     setIsVisible(true);
                 }
@@ -45,10 +57,19 @@ function PromotionPopup() {
 
     const handleClose = (dontShowAgain: boolean = false) => {
         if (dontShowAgain && promotion) {
-            // Save to localStorage so it won't show again
-            const seenPromotions = JSON.parse(localStorage.getItem('seenPromotions') || '[]');
-            seenPromotions.push(promotion.id);
-            localStorage.setItem('seenPromotions', JSON.stringify(seenPromotions));
+            try {
+                const parsed = JSON.parse(localStorage.getItem('seenPromotions') || '{}');
+                let seenMap: Record<string, number> = {};
+                if (Array.isArray(parsed)) {
+                    parsed.forEach(id => { seenMap[id] = Date.now(); });
+                } else {
+                    seenMap = parsed;
+                }
+                const promoTime = promotion.updatedAt ? new Date(promotion.updatedAt).getTime() : 0;
+                // Preveniamo clock skew assicurandoci che il tempo di chiusura sia per forza >= dell'aggiornamento
+                seenMap[promotion.id] = Math.max(Date.now(), promoTime + 1000);
+                localStorage.setItem('seenPromotions', JSON.stringify(seenMap));
+            } catch (e) { }
         }
         setIsVisible(false);
     };
