@@ -7,7 +7,7 @@ import type { NewsPromotion, UserProfile } from '../types';
 import './NewsOffersScreen.css';
 
 interface CouponStatus {
-    status: 'active' | 'redeemed';
+    status: 'active' | 'redeemed' | 'expired';
     code?: string;
 }
 
@@ -51,9 +51,6 @@ function NewsOffersScreen({ userProfile }: NewsOffersScreenProps) {
             // Filtra offerte newUsersOnly:
             // - Nascondi se l'utente non è nuovo
             // - Nascondi se il coupon è già stato riscattato
-            // Filtra offerte newUsersOnly:
-            // - Nascondi se l'utente non è nuovo
-            // - Nascondi se il coupon è già stato riscattato
             const visiblePromotions = allActive.filter(p => {
                 if (!p.newUsersOnly) return true; // offerta normale, sempre visibile
                 if (!isNewUser(userProfile)) return false; // utente non nuovo
@@ -86,7 +83,16 @@ function NewsOffersScreen({ userProfile }: NewsOffersScreenProps) {
             querySnapshot.forEach(doc => {
                 const data = doc.data();
                 if (promotionIds.includes(data.offerId)) {
-                    statusMap[data.offerId] = { status: data.status, code: data.code };
+                    // Calcola scadenza di 1 ora
+                    const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date(data.createdAt);
+                    const isExpired = Date.now() > createdAt.getTime() + 3600 * 1000;
+                    
+                    let computedStatus = data.status;
+                    if (data.status === 'active' && isExpired) {
+                        computedStatus = 'expired';
+                    }
+
+                    statusMap[data.offerId] = { status: computedStatus, code: data.code };
                 }
             });
             return statusMap;
@@ -174,11 +180,19 @@ function NewsOffersScreen({ userProfile }: NewsOffersScreenProps) {
 
                                     {/* Badge stato coupon - solo per promozioni */}
                                     {promotion.type !== 'news' && coupon && (
-                                        <div className={`coupon-status-badge ${coupon.status === 'active' ? 'coupon-status-active' : 'coupon-status-redeemed'}`}>
+                                        <div className={`coupon-status-badge ${
+                                            coupon.status === 'active' ? 'coupon-status-active' : 
+                                            coupon.status === 'expired' ? 'coupon-status-expired' : 'coupon-status-redeemed'
+                                        }`}>
                                             {coupon.status === 'active' ? (
                                                 <>
                                                     <span className="coupon-status-icon">🎫</span>
                                                     <span>Attivata – Codice: <strong>{coupon.code}</strong></span>
+                                                </>
+                                            ) : coupon.status === 'expired' ? (
+                                                <>
+                                                    <span className="coupon-status-icon">⏰</span>
+                                                    <span>Coupon Scaduto</span>
                                                 </>
                                             ) : (
                                                 <>

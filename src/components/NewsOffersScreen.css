@@ -112,6 +112,12 @@
     border: 1px solid #a5d6a7;
 }
 
+.coupon-status-expired {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+
 .coupon-status-redeemed {
     background: #f5f5f5;
     color: #757575;
