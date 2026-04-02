@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { UserProfile, LoyaltyCard, LoyaltyReward } from '../types';
-import { getLoyaltyPoints } from '../services/cassaCloudService';
-import { db } from '../firebase';
+import { db, functions } from '../firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 import { useNavigate } from 'react-router-dom';
 import './FidelityCardScreen.css';
 
@@ -14,76 +14,81 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
     const navigate = useNavigate();
     const [loyaltyData, setLoyaltyData] = useState<LoyaltyCard | null>(null);
     const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
-    const [loading, setLoading] = useState(false);
     const [loadingRewards, setLoadingRewards] = useState(true);
     const [howItWorks, setHowItWorks] = useState<{ title: string; description: string }[]>([]);
+    
+    // Stato per la sincronizzazione manuale
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncMessage, setSyncMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
     useEffect(() => {
         loadRewards();
         loadHowItWorks();
     }, []);
 
+    // Inizializza i dati dal profilo in modo sincrono invece di ri-scaricarli in automatico
     useEffect(() => {
-        if (userProfile) {
-            setLoading(true);
-
-            const fetchPoints = async () => {
-                let customerId = userProfile.cassaCloudId;
-                console.log('Initial customerId from profile:', customerId);
-
-                // Se non abbiamo l'ID, proviamo a cercarlo
-                if (!customerId) {
-                    try {
-                        console.log('Searching for customer profile with:', userProfile.email, userProfile.phone);
-                        // Importiamo dinamicamente per evitare dipendenze circolari se ce ne fossero
-                        const { linkCustomerProfile } = await import('../services/cassaCloudService');
-                        const foundId = await linkCustomerProfile(userProfile);
-                        console.log('Search result foundId:', foundId);
-
-                        if (foundId) {
-                            customerId = foundId;
-                            // Salva l'ID nel profilo utente in Firestore (solo se l'utente ha un ID)
-                            if (userProfile.id) {
-                                try {
-                                    const userDocRef = doc(db, 'users', userProfile.id);
-                                    await updateDoc(userDocRef, {
-                                        cassaCloudId: foundId,
-                                        loyaltyPointsLastSync: new Date().toISOString()
-                                    });
-                                    console.log('✅ Saved Cassa in Cloud ID to Firestore:', customerId);
-                                } catch (updateError) {
-                                    console.error('❌ Error saving cassaCloudId to Firestore:', updateError);
-                                    // Continuiamo comunque anche se il salvataggio fallisce
-                                }
-                            } else {
-                                console.warn('⚠️ User profile not saved yet, skipping cassaCloudId save');
-                            }
-                        } else {
-                            console.warn('Customer not found in Cassa in Cloud');
-                        }
-                    } catch (err) {
-                        console.error('Error linking profile:', err);
-                    }
-                }
-
-                if (customerId) {
-                    console.log('Fetching points for customerId:', customerId);
-                    getLoyaltyPoints(customerId).then(data => {
-                        setLoyaltyData(data);
-                        setLoading(false);
-                    });
-                } else {
-                    console.log('No customerId available, skipping points fetch');
-                    // Se ancora non abbiamo ID, mostriamo dati vuoti ma non carichiamo all'infinito
-                    setLoading(false);
-                }
-            };
-
-            fetchPoints();
+        if (userProfile && !loyaltyData) {
+            setLoyaltyData({
+                customerId: userProfile.cassaCloudId || '',
+                points: userProfile.loyaltyPoints || 0,
+                tier: 'Member',
+                lastUpdated: new Date(userProfile.loyaltyPointsLastSync || Date.now())
+            } as LoyaltyCard);
         }
-    }, [userProfile]);
+    }, [userProfile, loyaltyData]);
 
-    const loadRewards = async () => {
+    const handleSyncFidelity = async () => {
+        if (!userProfile) return;
+        setIsSyncing(true);
+        setSyncMessage(null);
+        try {
+            const searchAndSync = httpsCallable(functions, 'searchAndSyncFidelityPoints');
+            const result = await searchAndSync({
+                email: userProfile.email,
+                firstName: userProfile.firstName,
+                lastName: userProfile.lastName,
+                phone: userProfile.phone
+            });
+            const data = result.data as any;
+            if (data.success) {
+                if (userProfile.id) {
+                    const userRef = doc(db, 'users', userProfile.id);
+                    await updateDoc(userRef, {
+                        cassaCloudId: data.customerId,
+                        loyaltyPoints: data.points,
+                        loyaltyPointsLastSync: new Date().toISOString()
+                    });
+                }
+                
+                // Aggiorna lo stato locale per la UI
+                setLoyaltyData(prev => ({
+                    ...prev,
+                    customerId: data.customerId,
+                    points: data.points,
+                    tier: prev?.tier || 'Member',
+                    lastUpdated: new Date()
+                } as LoyaltyCard));
+                
+                setSyncMessage({ type: 'success', text: `Fidelity aggiornata! Hai ${data.points} punti.` });
+            } else {
+                if (data.code === 'CUSTOMER_NOT_FOUND') {
+                    setSyncMessage({ type: 'error', text: 'Nessuna Fidelity Card trovata per questa email/cellulare.' });
+                } else {
+                    setSyncMessage({ type: 'error', text: data.message || "Errore durante l'aggiornamento." });
+                }
+            }
+        } catch (error: any) {
+            console.error('Sync error:', error);
+            setSyncMessage({ type: 'error', text: 'Errore di connessione. Riprova più tardi.' });
+        } finally {
+            setIsSyncing(false);
+            // Nasconde il messaggio dopo 5 sec
+            setTimeout(() => setSyncMessage(null), 5000);
+        }
+    };
+
+    async function loadRewards() {
         setLoadingRewards(true);
         try {
             const docRef = doc(db, 'config', 'rewards');
@@ -104,7 +109,7 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
         setLoadingRewards(false);
     };
 
-    const loadHowItWorks = async () => {
+    async function loadHowItWorks() {
         try {
             const docRef = doc(db, 'config', 'fidelity');
             const docSnap = await getDoc(docRef);
@@ -145,17 +150,13 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
                         <div className="card-body">
                             <div className="points-display">
                                 <span className="points-value">
-                                    {loading ? (
-                                        <div className="spinner" aria-label="Caricamento punti"></div>
-                                    ) : (
-                                        loyaltyData?.points || 0
-                                    )}
+                                    {loyaltyData?.points || 0}
                                 </span>
                                 <span className="points-label">Punti</span>
                             </div>
 
                             {/* Gamification Progress Bar */}
-                            {!loading && (() => {
+                            {(() => {
                                 const currentPoints = loyaltyData?.points || 0;
                                 // Sort rewards by points required to find the next target
                                 const sortedRewards = [...rewards].sort((a, b) => a.pointsRequired - b.pointsRequired);
@@ -205,6 +206,22 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
                             <span className="card-id">ID: {userProfile.phone}</span>
                         </div>
                     </div>
+                </div>
+
+                <div className="fidelity-actions" style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <button 
+                        onClick={handleSyncFidelity} 
+                        disabled={isSyncing} 
+                        className="btn btn-primary" 
+                        style={{ width: '100%', maxWidth: '300px' }}
+                    >
+                        {isSyncing ? '🔄 Sincronizzazione...' : '🔄 Sincronizza Fidelity'}
+                    </button>
+                    {syncMessage && (
+                        <div style={{ marginTop: '10px', fontSize: '0.9rem', color: syncMessage.type === 'success' ? '#2e7d32' : '#d32f2f', textAlign: 'center', backgroundColor: syncMessage.type === 'success' ? '#e8f5e9' : '#ffebee', padding: '10px', borderRadius: '8px', width: '100%', maxWidth: '300px' }}>
+                            {syncMessage.text}
+                        </div>
+                    )}
                 </div>
             </div>
 
