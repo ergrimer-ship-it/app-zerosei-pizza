@@ -2,38 +2,46 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Products - Public read, admin write
-    match /products/{productId} {
-      allow read: if true;  // Everyone can read products
-      allow write: if true; // Temporarily allow all writes for testing
-    }
-    
-    // Categories - Public read, admin write
-    match /categories/{categoryId} {
-      allow read: if true;
-      allow write: if true;
-    }
-    
-    // Orders - Authenticated users
-    match /orders/{orderId} {
-      allow read, write: if true;
-    }
-    
-    // Users - Authenticated users can read/write their own data
+
+    // ── Dati pubblici: menù, categorie, promozioni ───────────────────────────
+    // Lettura libera. Scrittura aperta perché l'admin non usa Firebase Auth
+    // e gestisce questi dati dal pannello admin.
+    match /products/{id}         { allow read: if true; allow write: if true; }
+    match /categories/{id}       { allow read: if true; allow write: if true; }
+    match /promotions/{id}       { allow read: if true; allow write: if true; }
+    match /modifications/{id}    { allow read: if true; allow write: if true; }
+    match /fidelity_rewards/{id} { allow read: if true; allow write: if true; }
+    match /home_settings/{id}    { allow read: if true; allow write: if true; }
+    match /theme_settings/{id}   { allow read: if true; allow write: if true; }
+    match /app_settings/{id}     { allow read: if true; allow write: if true; }
+    match /settings/{id}         { allow read: if true; allow write: if true; }
+
+    // ── Coupon: lettura/scrittura aperta per la validazione admin ─────────────
+    match /coupons/{id}          { allow read, write: if true; }
+
+    // ── Profilo utente: solo il proprietario autenticato ─────────────────────
+    // L'admin legge/scrive tramite Cloud Functions (admin SDK bypassa queste regole)
     match /users/{userId} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
-    
-    // Promotions - Public read, admin write
-    match /promotions/{promotionId} {
-      allow read: if true;
-      allow write: if true;
+
+    // ── Ordini: solo il proprietario può leggere i propri ─────────────────────
+    // L'admin legge tutti gli ordini tramite Cloud Function adminGetAllOrders
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read:   if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
-    
-    // Allow all for testing - CHANGE THIS IN PRODUCTION!
-    match /{document=**} {
-      allow read, write: if true;
+
+    // ── Preferiti: solo il proprietario ──────────────────────────────────────
+    match /favorites/{favoriteId} {
+      allow read, update, delete: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid;
     }
+
+    // ── Cache fidelity: solo Cloud Functions (admin SDK bypassa le regole) ────
+    match /fidelity_cache/{id} { allow read, write: if false; }
   }
 }

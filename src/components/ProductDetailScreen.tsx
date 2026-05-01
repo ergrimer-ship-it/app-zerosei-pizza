@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Product, Cart, PizzaModification, UserProfile } from '../types';
-import { addToCart } from '../services/cartService';
+import { addToCart, updateCartItem } from '../services/cartService';
 import { getProductById, addFavorite, updateFavorite } from '../services/dbService';
 import { getModifications } from '../services/modificationService';
+import { useModal } from '../context/ModalContext';
 import './ProductDetailScreen.css';
 
 interface ProductDetailScreenProps {
@@ -16,7 +17,8 @@ function ProductDetailScreen({ cart, setCart, userProfile }: ProductDetailScreen
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { favoriteId, initialModifications, initialNotes, productIds } = location.state || {}; // Get edit state if present
+    const { showAlert } = useModal();
+    const { favoriteId, initialModifications, initialNotes, productIds, editCartIndex } = location.state || {};
 
     const [product, setProduct] = useState<Product | null>(null);
     const [quantity, setQuantity] = useState(1);
@@ -125,9 +127,14 @@ function ProductDetailScreen({ cart, setCart, userProfile }: ProductDetailScreen
 
     const handleAddToCart = () => {
         if (product) {
-            const newCart = addToCart(cart, product, quantity, notes, selectedModifications);
-            setCart(newCart);
-            navigate(-1); // Go back
+            if (editCartIndex !== undefined) {
+                const newCart = updateCartItem(cart, editCartIndex, selectedModifications, notes);
+                setCart(newCart);
+            } else {
+                const newCart = addToCart(cart, product, quantity, notes, selectedModifications);
+                setCart(newCart);
+            }
+            navigate('/cart');
         }
     };
 
@@ -135,33 +142,29 @@ function ProductDetailScreen({ cart, setCart, userProfile }: ProductDetailScreen
 
     const handleSaveFavorite = async () => {
         if (!userProfile) {
-            alert('Devi aver creato un profilo per salvare i preferiti!');
+            await showAlert('Devi aver creato un profilo per salvare i preferiti!');
             navigate('/profile');
             return;
         }
 
         if (product) {
             try {
-                // Fallback if ID is missing (should verify implementation of loadProfile)
-                // Assuming userProfile.id exists if loaded correctly. 
-                // However, localStorage might lack it if older version.
-                // ideally we should check userProfile.id but for now let's use the object check.
                 if (!userProfile.id) {
-                    alert('Errore: Profilo incompleto. Prova a ricaricare la pagina o aggiornare il profilo.');
+                    await showAlert('Errore: Profilo incompleto. Prova a ricaricare la pagina o aggiornare il profilo.');
                     return;
                 }
 
                 if (favoriteId) {
                     await updateFavorite(favoriteId, selectedModifications, notes);
-                    alert('Preferito aggiornato! ✅');
-                    navigate('/favorites'); // Return to favorites after update
+                    await showAlert('Preferito aggiornato! ✅');
+                    navigate('/favorites');
                 } else {
                     await addFavorite(userProfile.id, product, selectedModifications, notes);
-                    alert('Pizza aggiunta ai tuoi Preferiti! ❤️');
+                    await showAlert('Pizza aggiunta ai tuoi Preferiti! ❤️');
                 }
             } catch (error) {
                 console.error('Error saving favorite:', error);
-                alert('Errore durante il salvataggio nei preferiti.');
+                await showAlert('Errore durante il salvataggio nei preferiti.');
             }
         }
     };
@@ -204,6 +207,7 @@ function ProductDetailScreen({ cart, setCart, userProfile }: ProductDetailScreen
                         src={displayImage}
                         alt={product.name}
                         className="product-image"
+                        loading="lazy"
                         onError={(e) => {
                             console.error('Error loading image:', displayImage);
                             e.currentTarget.style.display = 'none';
@@ -285,7 +289,10 @@ function ProductDetailScreen({ cart, setCart, userProfile }: ProductDetailScreen
 
                 <div className="action-buttons">
                     <button className="btn btn-primary add-to-cart-btn" onClick={handleAddToCart}>
-                        Aggiungi al carrello - €{getTotalPrice().toFixed(2)}
+                        {editCartIndex !== undefined
+                            ? `✏️ Aggiorna nel carrello - €${getTotalPrice().toFixed(2)}`
+                            : `Aggiungi al carrello - €${getTotalPrice().toFixed(2)}`
+                        }
                     </button>
 
                     <button className="btn btn-favorite save-favorite-btn" onClick={handleSaveFavorite}>

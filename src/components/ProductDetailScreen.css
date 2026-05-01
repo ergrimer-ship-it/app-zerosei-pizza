@@ -32,6 +32,7 @@
     height: 300px;
     overflow: hidden;
     position: relative;
+    background-color: #e8e8e8;
 }
 
 .product-image {
@@ -195,7 +196,7 @@
 
 .action-buttons {
     position: fixed;
-    bottom: 0;
+    bottom: 64px;
     left: 0;
     right: 0;
     padding: var(--spacing-md);

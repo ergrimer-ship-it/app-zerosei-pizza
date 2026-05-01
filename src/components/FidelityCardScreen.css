@@ -290,6 +290,15 @@
     padding: var(--spacing-md);
 }
 
+.sync-hint {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary, #666);
+    text-align: center;
+    margin-top: var(--spacing-md);
+    line-height: 1.5;
+    max-width: 340px;
+}
+
 /* Sync Button Container */
 .fidelity-actions-container {
     display: flex;

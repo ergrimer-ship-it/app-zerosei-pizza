@@ -214,10 +214,10 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
             </div>
 
             <div className="fidelity-actions-container">
-                <button 
-                    onClick={handleSyncFidelity} 
-                    disabled={isSyncing} 
-                    className="btn btn-sync-fidelity" 
+                <button
+                    onClick={handleSyncFidelity}
+                    disabled={isSyncing}
+                    className="btn btn-sync-fidelity"
                 >
                     {isSyncing ? 'Attendere...' : '🔄 Aggiorna Punti'}
                 </button>
@@ -226,6 +226,9 @@ function FidelityCardScreen({ userProfile }: FidelityCardScreenProps) {
                         {syncMessage.text}
                     </div>
                 )}
+                <p className="sync-hint">
+                    💡 Per sincronizzare i tuoi punti, comunica al personale della pizzeria la mail con cui ti sei registrato: <strong>{userProfile.email}</strong>
+                </p>
             </div>
 
             <div className="rewards-section">

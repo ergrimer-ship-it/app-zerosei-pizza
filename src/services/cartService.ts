@@ -150,6 +150,26 @@ export function updateQuantity(cart: Cart, productIndex: number, quantity: numbe
 }
 
 /**
+ * Aggiorna modifiche e note di un item esistente nel carrello
+ */
+export function updateCartItem(
+    cart: Cart,
+    index: number,
+    modifications: PizzaModification[],
+    notes: string
+): Cart {
+    const newItems = cart.items.map((item, i) => {
+        if (i === index) {
+            return { ...item, modifications, notes };
+        }
+        return item;
+    });
+    const newCart: Cart = { items: newItems, total: calculateTotal(newItems) };
+    saveCart(newCart);
+    return newCart;
+}
+
+/**
  * Svuota il carrello
  */
 export function clearCart(): Cart {

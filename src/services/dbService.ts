@@ -1,7 +1,55 @@
 import { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, setDoc, query, where, orderBy, limit, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
+import app from '../firebase';
 import type { Product, Category, UserProfile, Order, OrderStatus, PizzaModification, NewsPromotion, ProductCategory, FavoriteItem } from '../types';
+
+// ─── Admin token helper ───────────────────────────────────────────────────────
+function getAdminToken(): string {
+    return localStorage.getItem('admin_token') || '';
+}
+
+// Converte date serializzate dalle Cloud Functions (ISO string) in Date
+function parseDate(val: any): Date | undefined {
+    if (!val) return undefined;
+    if (val instanceof Date) return val;
+    return new Date(val);
+}
+
+// ─── Admin: lettura utenti e ordini via Cloud Function ────────────────────────
+// L'admin SDK nelle Cloud Functions bypassa le Firestore Security Rules
+
+export async function getAllUsersAdmin(): Promise<UserProfile[]> {
+    const fn = httpsCallable(getFunctions(app), 'adminGetAllUsers');
+    const result = await fn({ adminToken: getAdminToken() });
+    return (result.data as any[]).map(u => ({
+        ...u,
+        createdAt:  parseDate(u.createdAt)  ?? new Date(),
+        updatedAt:  parseDate(u.updatedAt)  ?? new Date(),
+        lastAccess: parseDate(u.lastAccess),
+    } as UserProfile));
+}
+
+export async function getAllOrdersAdmin(): Promise<Order[]> {
+    const fn = httpsCallable(getFunctions(app), 'adminGetAllOrders');
+    const result = await fn({ adminToken: getAdminToken() });
+    return (result.data as any[]).map(o => ({
+        ...o,
+        createdAt: parseDate(o.createdAt) ?? new Date(),
+        updatedAt: parseDate(o.updatedAt) ?? new Date(),
+    } as Order));
+}
+
+export async function adminDeleteUser(userId: string): Promise<void> {
+    const fn = httpsCallable(getFunctions(app), 'adminDeleteUser');
+    await fn({ adminToken: getAdminToken(), userId });
+}
+
+export async function adminUpdateUser(userId: string, updates: Record<string, any>): Promise<void> {
+    const fn = httpsCallable(getFunctions(app), 'adminUpdateUser');
+    await fn({ adminToken: getAdminToken(), userId, updates });
+}
 
 // ============================================
 // PRODUCTS

@@ -159,6 +159,10 @@
     border: 1px solid #ffeaa7;
 }
 
+.coupon-time-warning {
+    margin-bottom: 12px;
+}
+
 .login-prompt,
 .error-message {
     text-align: center;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAllOrders } from '../../services/dbService';
+import { getAllOrdersAdmin } from '../../services/dbService';
 import { Order } from '../../types';
 import './OrderManagement.css';
 
@@ -15,7 +15,7 @@ function OrderManagement() {
     const loadOrders = async () => {
         setLoading(true);
         try {
-            const data = await getAllOrders();
+            const data = await getAllOrdersAdmin();
             setOrders(data);
         } catch (error) {
             console.error('Error loading orders:', error);

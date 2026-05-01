@@ -1,5 +1,5 @@
-import { ReactNode, useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { ReactNode, useEffect, useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Cart, UserProfile } from '../types';
 import { getCartItemCount } from '../services/cartService';
 import { db } from '../firebase';
@@ -13,11 +13,19 @@ interface LayoutProps {
     userProfile: UserProfile | null;
 }
 
-function Layout({ children, cart }: LayoutProps) {
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [logoUrl, setLogoUrl] = useState('');
-    const [logoSize, setLogoSize] = useState(60);
+const tabItems = [
+    { path: '/',          label: 'Home',             icon: '🏠' },
+    { path: '/menu',      label: 'Menù',             icon: '🍕' },
+    { path: '/news',      label: 'Novità e Offerte', icon: '📰' },
+    { path: '/fidelity',  label: 'Fidelity Card',    icon: '🎁' },
+    { path: '/favorites', label: 'Preferiti',         icon: '❤️' },
+];
+
+function Layout({ children, cart, userProfile }: LayoutProps) {
+    const [logoUrl, setLogoUrl] = useState(() => localStorage.getItem('cachedLogoUrl') || '');
+    const [logoSize, setLogoSize] = useState(() => parseInt(localStorage.getItem('cachedLogoSize') || '60'));
     const navigate = useNavigate();
+    const location = useLocation();
     const cartItemCount = getCartItemCount(cart);
 
     useEffect(() => {
@@ -26,12 +34,10 @@ function Layout({ children, cart }: LayoutProps) {
                 const docRef = doc(db, 'config', 'general');
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
-                    if (docSnap.data().logoUrl) {
-                        setLogoUrl(docSnap.data().logoUrl);
-                    }
-                    if (docSnap.data().logoSize) {
-                        setLogoSize(docSnap.data().logoSize);
-                    }
+                    const url = docSnap.data().logoUrl;
+                    const size = docSnap.data().logoSize;
+                    if (url) { setLogoUrl(url); localStorage.setItem('cachedLogoUrl', url); }
+                    if (size) { setLogoSize(size); localStorage.setItem('cachedLogoSize', String(size)); }
                 }
             } catch (error) {
                 console.error('Error loading logo:', error);
@@ -40,99 +46,70 @@ function Layout({ children, cart }: LayoutProps) {
         loadLogo();
     }, []);
 
-    const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-    const closeSidebar = () => setSidebarOpen(false);
-
-    const menuItems = [
-        { path: '/', label: 'Home', icon: '🏠' },
-        { path: '/menu', label: 'Menù', icon: '🍕' },
-        { path: '/favorites', label: 'I Miei Preferiti', icon: '❤️' },
-        { path: '/news', label: 'Novità e Offerte', icon: '📰' },
-        { path: '/fidelity', label: 'Fidelity Card', icon: '🎁' },
-        { path: '/profile', label: 'Profilo', icon: '👤' },
-    ];
+    const isActive = (path: string) => {
+        if (path === '/') return location.pathname === '/';
+        return location.pathname.startsWith(path);
+    };
 
     return (
         <div className="layout">
             {/* Header */}
             <header className="header">
                 <div className="header-content">
-                    <button className="menu-btn" onClick={toggleSidebar} aria-label="Menu">
-                        <span className="menu-icon">☰</span>
-                    </button>
-
-                    <Link to="/" className="logo">
-                        {logoUrl ? (
-                            <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: `${logoSize}px`, objectFit: 'contain' }} />
-                        ) : (
-                            <>
-                                <span className="logo-text">ZeroSei</span>
-                                <span className="logo-emoji">🍕</span>
-                            </>
-                        )}
-                    </Link>
-
-                    <button
-                        className="cart-btn"
-                        onClick={() => navigate('/cart')}
-                        aria-label="Carrello"
-                    >
-                        <span className="cart-icon">🛒</span>
-                        {cartItemCount > 0 && (
-                            <span className="cart-badge">{cartItemCount}</span>
-                        )}
-                    </button>
-                </div>
-            </header>
-
-            {/* Sidebar */}
-            <div className={`sidebar-overlay ${sidebarOpen ? 'active' : ''}`} onClick={closeSidebar} />
-            <aside className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
-                <div className="sidebar-header">
-                    <h2>Menu</h2>
-                    <button className="close-btn" onClick={closeSidebar}>✕</button>
-                </div>
-
-                <nav className="sidebar-nav">
-                    {menuItems.map(item => (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            className="sidebar-link"
-                            onClick={closeSidebar}
+                    <div className="header-left">
+                        <button
+                            className="user-profile-btn"
+                            onClick={() => navigate('/profile')}
+                            aria-label="Profilo"
                         >
-                            <span className="sidebar-icon">{item.icon}</span>
-                            <span>{item.label}</span>
-                        </Link>
-                    ))}
-                </nav>
+                            <span className="user-icon-mobile">👤</span>
+                            <span className="user-name-desktop">
+                                {userProfile ? `${userProfile.firstName} ${userProfile.lastName}` : '👤 Accedi'}
+                            </span>
+                        </button>
+                    </div>
 
-                <div className="sidebar-footer">
-                    <div className="social-links">
-                        <a href="https://www.instagram.com/zeroseilapizza/?hl=it" target="_blank" rel="noopener noreferrer" className="social-link">
-                            📷 Instagram
-                        </a>
-                        <a href="https://www.facebook.com/pizzeriazerosei/?locale=it_IT" target="_blank" rel="noopener noreferrer" className="social-link">
-                            📘 Facebook
-                        </a>
-                        <a href="https://www.zeroseilapizzadasporto.it/" target="_blank" rel="noopener noreferrer" className="social-link">
-                            🌐 Sito Web
-                        </a>
+                    <div className="header-center">
+                        <Link to="/" className="logo">
+                            {logoUrl && (
+                                <img src={logoUrl} alt="ZeroSei Pizza" className="logo-image" style={{ height: `${logoSize}px`, objectFit: 'contain' }} />
+                            )}
+                        </Link>
+                    </div>
+
+                    <div className="header-right">
+                        <button
+                            className="cart-btn"
+                            onClick={() => navigate('/cart')}
+                            aria-label="Carrello"
+                        >
+                            <span className="cart-icon">🛒</span>
+                            {cartItemCount > 0 && (
+                                <span className="cart-badge">{cartItemCount}</span>
+                            )}
+                        </button>
                     </div>
                 </div>
-            </aside>
+            </header>
 
             {/* Main Content */}
             <main className="main-content">
                 {children}
             </main>
 
-            {/* Footer */}
-            <footer className="footer">
-                <div className="footer-content">
-                    <p>&copy; 2025 ZeroSei Pizza. Tutti i diritti riservati.</p>
-                </div>
-            </footer>
+            {/* Bottom Tab Bar */}
+            <nav className="tab-bar">
+                {tabItems.map(item => (
+                    <button
+                        key={item.path}
+                        className={`tab-item ${isActive(item.path) ? 'active' : ''}`}
+                        onClick={() => navigate(item.path)}
+                    >
+                        <span className="tab-icon">{item.icon}</span>
+                        <span className="tab-label">{item.label}</span>
+                    </button>
+                ))}
+            </nav>
 
             {/* Promotion Popup */}
             <PromotionPopup />

@@ -6,7 +6,7 @@ import PromotionManagement from './admin/PromotionManagement';
 import OrderManagement from './admin/OrderManagement';
 import Settings from './admin/Settings';
 import ModificationManagement from './admin/ModificationManagement';
-import CustomerManagement from './admin/CustomerManagement';
+import CrmScreen from './admin/CrmScreen';
 import FidelityRewardsManagement from './admin/FidelityRewardsManagement';
 import CouponValidation from './admin/CouponValidation';
 import CouponStats from './admin/CouponStats';
@@ -50,7 +50,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
             case 'settings':
                 return <Settings />;
             case 'customers':
-                return <CustomerManagement />;
+                return <CrmScreen />;
             default:
                 return <OrderManagement />;
         }
@@ -121,7 +121,7 @@ function AdminDashboard({ onLogout }: AdminDashboardProps) {
                         className={`nav-item ${activeTab === 'customers' ? 'active' : ''}`}
                         onClick={() => setActiveTab('customers')}
                     >
-                        {theme?.iconCustomers || '👥'} Clienti
+                        {theme?.iconCustomers || '👥'} CRM Clienti
                     </button>
                     <button
                         className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserProfile } from '../types';
 import { createUserProfileWithUid, updateUserProfile } from '../services/dbService';
 import { clearCart } from '../services/cartService';
@@ -22,6 +23,7 @@ interface ProfileScreenProps {
 type AuthMode = 'login' | 'register';
 
 function ProfileScreen({ userProfile, setUserProfile, setCart }: ProfileScreenProps) {
+    const navigate = useNavigate();
     const [authMode, setAuthMode] = useState<AuthMode>('login');
     const [isEditing, setIsEditing] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -123,6 +125,7 @@ function ProfileScreen({ userProfile, setUserProfile, setCart }: ProfileScreenPr
             }
             
             showMessage('success', 'Registrazione completata! Benvenuto 🎉');
+            setTimeout(() => navigate('/'), 1000);
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
                 showMessage('error', 'Email già registrata. Prova ad accedere.');
@@ -141,6 +144,7 @@ function ProfileScreen({ userProfile, setUserProfile, setCart }: ProfileScreenPr
         }
         try {
             await signInWithEmailAndPassword(auth, formData.email, formData.password);
+            navigate('/');
         } catch (error: any) {
             if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
                 showMessage('error', 'Email o password non corretti.');

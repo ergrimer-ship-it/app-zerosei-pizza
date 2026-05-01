@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FavoriteItem, Cart, UserProfile } from '../types';
 import { getFavoritesByUser, removeFavorite } from '../services/dbService';
 import { addToCart } from '../services/cartService';
+import { useModal } from '../context/ModalContext';
 import './FavoritesScreen.css';
 
 interface FavoritesScreenProps {
@@ -13,6 +14,7 @@ interface FavoritesScreenProps {
 
 function FavoritesScreen({ cart, setCart, userProfile }: FavoritesScreenProps) {
     const navigate = useNavigate();
+    const { showConfirm, showAlert } = useModal();
     const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,8 @@ function FavoritesScreen({ cart, setCart, userProfile }: FavoritesScreenProps) {
 
     const handleRemove = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        if (confirm('Rimuovere questo preferito?')) {
+        const confirmed = await showConfirm('Rimuovere questo preferito?');
+        if (confirmed) {
             try {
                 await removeFavorite(id);
                 setFavorites(prev => prev.filter(item => item.id !== id));
@@ -49,7 +52,7 @@ function FavoritesScreen({ cart, setCart, userProfile }: FavoritesScreenProps) {
         }
     };
 
-    const handleAddToCart = (item: FavoriteItem, e: React.MouseEvent) => {
+    const handleAddToCart = async (item: FavoriteItem, e: React.MouseEvent) => {
         e.stopPropagation();
         const newCart = addToCart(
             cart,
@@ -59,7 +62,7 @@ function FavoritesScreen({ cart, setCart, userProfile }: FavoritesScreenProps) {
             item.modifications
         );
         setCart(newCart);
-        alert('Aggiunto al carrello! 🛒');
+        await showAlert('Aggiunto al carrello! 🛒');
     };
 
     if (loading) return <div className="favorites-screen"><div className="loading">Caricamento...</div></div>;

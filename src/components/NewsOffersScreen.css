@@ -44,10 +44,10 @@
 .news-image {
     width: 100%;
     height: 200px;
-    /* Fixed height for consistency */
     object-fit: cover;
     border-radius: 0;
-    /* Remove border radius since it's full width now */
+    background-color: #e8e8e8;
+    display: block;
     flex-shrink: 0;
 }
 

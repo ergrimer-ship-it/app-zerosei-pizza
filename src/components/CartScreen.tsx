@@ -9,6 +9,7 @@ import {
 } from '../services/cartService';
 import { openWhatsApp } from '../services/whatsappService';
 import { callPizzeria } from '../services/phoneService';
+import { useModal } from '../context/ModalContext';
 import './CartScreen.css';
 
 // Styles added via replace_file_content for disclaimer
@@ -28,6 +29,7 @@ interface CartScreenProps {
 
 function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
     const navigate = useNavigate();
+    const { showConfirm, showAlert } = useModal();
     const [guestName, setGuestName] = useState('');
     const [guestPhone, setGuestPhone] = useState('');
 
@@ -50,14 +52,15 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
         setCart(newCart);
     };
 
-    const handleClearCart = () => {
-        if (window.confirm('Sei sicuro di voler svuotare il carrello?')) {
+    const handleClearCart = async () => {
+        const confirmed = await showConfirm('Sei sicuro di voler svuotare il carrello?');
+        if (confirmed) {
             const newCart = clearCart();
             setCart(newCart);
         }
     };
 
-    const handleWhatsAppOrder = () => {
+    const handleWhatsAppOrder = async () => {
         console.log('WhatsApp order button clicked');
         let userInfo;
 
@@ -72,20 +75,20 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
                 phone: guestPhone
             };
         } else {
-            alert('Per favore inserisci il tuo nome e numero di telefono o accedi al profilo.');
+            await showAlert('Per favore inserisci il tuo nome e numero di telefono o accedi al profilo.');
             return;
         }
 
         // Validate delivery/pickup time (now mandatory for both)
         if (!pickupTime) {
-            alert('Per favore seleziona un orario preferito per preparare il tuo ordine.');
+            await showAlert('Per favore seleziona un orario preferito per preparare il tuo ordine.');
             return;
         }
 
         // Validate delivery address
         if (deliveryType === 'delivery') {
             if (!street || !city || !doorbell) {
-                alert('Per favore compila tutti i campi dell\'indirizzo di consegna.');
+                await showAlert('Per favore compila tutti i campi dell\'indirizzo di consegna.');
                 return;
             }
         }
@@ -159,8 +162,14 @@ function CartScreen({ cart, setCart, userProfile }: CartScreenProps) {
                     const unitPrice = calculateItemUnitPrice(item);
                     return (
                         <div key={`${item.product.id}-${index}`} className="cart-item">
-                            <div className="item-info">
-                                <h3>{item.product.name}</h3>
+                            <div className="item-info" style={{ cursor: 'pointer' }} onClick={() => navigate(`/product/${item.product.id}`, {
+                                state: {
+                                    editCartIndex: index,
+                                    initialModifications: item.modifications || [],
+                                    initialNotes: item.notes || ''
+                                }
+                            })}>
+                                <h3>{item.product.name} <span className="edit-hint">✏️</span></h3>
                                 <p className="item-price">€{unitPrice.toFixed(2)} cad.</p>
 
                                 {item.modifications && item.modifications.length > 0 && (

@@ -1,0 +1,168 @@
+/* ── Android banner (in cima, fisso) ── */
+.install-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9998;
+    background: #1a1a1a;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    animation: banner-slide-down 0.25s ease;
+}
+
+@keyframes banner-slide-down {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(0); }
+}
+
+.install-banner-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+.install-banner-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+.install-banner-text strong { font-size: 0.9rem; }
+.install-banner-text span   { font-size: 0.75rem; opacity: 0.75; }
+
+.install-banner-btn {
+    background: var(--color-primary, #D4AF37);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.install-banner-close {
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.6);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* ── iOS overlay ── */
+.install-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 9998;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 20px;
+    animation: overlay-fade 0.2s ease;
+}
+
+@keyframes overlay-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.install-ios-modal {
+    background: white;
+    border-radius: 20px;
+    padding: 28px 24px 20px;
+    width: calc(100% - 32px);
+    max-width: 380px;
+    position: relative;
+    text-align: center;
+    animation: modal-up 0.25s ease;
+}
+
+@keyframes modal-up {
+    from { transform: translateY(30px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.install-modal-close {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    border: none;
+    background: #f0f0f0;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.install-ios-icon { font-size: 2.8rem; margin-bottom: 8px; }
+
+.install-ios-modal h3 {
+    margin: 0 0 6px;
+    font-size: 1.1rem;
+}
+.install-ios-modal p {
+    margin: 0 0 20px;
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.4;
+}
+
+.install-ios-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.install-ios-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+    color: #333;
+}
+
+.install-ios-num {
+    background: var(--color-primary, #D4AF37);
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.install-ios-icon-share {
+    display: inline-flex;
+    align-items: center;
+    color: #007aff;
+    flex-shrink: 0;
+}
+
+/* Freccia che punta verso il basso (verso la barra Safari) */
+.install-ios-arrow {
+    font-size: 1.8rem;
+    color: var(--color-primary, #D4AF37);
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(6px); }
+}

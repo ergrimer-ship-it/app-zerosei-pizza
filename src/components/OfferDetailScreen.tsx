@@ -342,7 +342,7 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
 
             <div className="offer-detail-card">
                 {offer.imageUrl && (
-                    <img src={offer.imageUrl} alt={offer.title} className="offer-detail-image" />
+                    <img src={offer.imageUrl} alt={offer.title} className="offer-detail-image" loading="lazy" />
                 )}
 
                 <div className="offer-detail-content">
@@ -467,6 +467,12 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                                         </div>
                                     )}
 
+                                    {isTodayAllowed && !dailyLimitReached && (
+                                        <div className="alert alert-warning coupon-time-warning">
+                                            ⚠️ <strong>Attenzione:</strong> una volta attivato, il coupon è valido solo per <strong>1 ora</strong>. Riscattalo subito in cassa!
+                                        </div>
+                                    )}
+
                                     <button
                                         className="btn btn-primary btn-large"
                                         onClick={handleActivateOffer}
@@ -474,12 +480,6 @@ function OfferDetailScreen({ userProfile }: OfferDetailScreenProps) {
                                     >
                                         {activating ? 'Attivazione in corso...' : '🎫 ATTIVA QUESTA OFFERTA'}
                                     </button>
-
-                                    {isTodayAllowed && !dailyLimitReached && (
-                                        <p className="help-text">
-                                            Attiva l'offerta per ricevere il tuo codice sconto personale
-                                        </p>
-                                    )}
                                 </div>
                             )}
 

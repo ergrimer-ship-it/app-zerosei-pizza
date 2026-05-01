@@ -159,6 +159,7 @@ function NewsOffersScreen({ userProfile }: NewsOffersScreenProps) {
                                         src={promotion.imageUrl}
                                         alt={promotion.title}
                                         className="news-image"
+                                        loading="lazy"
                                     />
                                 ) : (
                                     <div className="news-icon">

@@ -241,6 +241,7 @@ function HomeScreen({ userProfile }: HomeScreenProps) {
                                     src={button.imageUrl}
                                     alt={button.title}
                                     className="cta-icon-image"
+                                    loading="lazy"
                                 />
                             ) : (
                                 <span className="cta-icon">{button.icon}</span>

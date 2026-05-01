@@ -21,6 +21,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { useTheme } from './hooks/useTheme';
 import DebugProducts from './components/DebugProducts';
 import UpdatePrompt from './components/UpdatePrompt';
+import InstallPrompt from './components/InstallPrompt';
+import { ModalProvider } from './context/ModalContext';
 
 function App() {
     const [cart, setCart] = useState<Cart>({ items: [], total: 0 });
@@ -35,9 +37,10 @@ function App() {
         const savedCart = loadCart();
         setCart(savedCart);
 
-        // Verifica autenticazione admin
+        // Verifica autenticazione admin (richiede anche il token di sessione)
         const adminAuth = localStorage.getItem('admin_authenticated');
-        setIsAdminAuthenticated(adminAuth === 'true');
+        const adminToken = localStorage.getItem('admin_token');
+        setIsAdminAuthenticated(adminAuth === 'true' && !!adminToken);
 
         // Ascolta lo stato di autenticazione Firebase
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -147,12 +150,15 @@ function App() {
 
     const handleAdminLogout = () => {
         localStorage.removeItem('admin_authenticated');
+        localStorage.removeItem('admin_token');
         setIsAdminAuthenticated(false);
     };
 
     return (
+        <ModalProvider>
         <Router>
             <UpdatePrompt />
+            <InstallPrompt />
             <Routes>
                 {/* Admin Routes */}
                 <Route
@@ -192,6 +198,7 @@ function App() {
                 } />
             </Routes>
         </Router>
+        </ModalProvider>
     );
 }
 

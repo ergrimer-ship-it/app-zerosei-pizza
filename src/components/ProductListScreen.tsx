@@ -127,6 +127,7 @@ function ProductListScreen({ cart, setCart }: ProductListScreenProps) {
                                             src={displayImage}
                                             alt={product.name}
                                             className="product-list-image"
+                                            loading="lazy"
                                             onError={(e) => e.currentTarget.style.display = 'none'}
                                         />
                                     </div>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import app from '../firebase';
 import './AdminLogin.css';
-
-const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD || '').trim() || '2Marzo2021!';
 
 interface AdminLoginProps {
     onLogin: () => void;
@@ -11,18 +11,28 @@ interface AdminLoginProps {
 function AdminLogin({ onLogin }: AdminLoginProps) {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (password.trim() === ADMIN_PASSWORD) {
-            localStorage.setItem('admin_authenticated', 'true');
-            onLogin();
-            navigate('/admin/dashboard');
-        } else {
+        setLoading(true);
+        setError('');
+        try {
+            const fn = httpsCallable(getFunctions(app), 'adminLogin');
+            const result = await fn({ password: password.trim() });
+            const data = result.data as { success: boolean; token: string };
+            if (data.success) {
+                localStorage.setItem('admin_authenticated', 'true');
+                localStorage.setItem('admin_token', data.token);
+                onLogin();
+                navigate('/admin/dashboard');
+            }
+        } catch {
             setError('Password non corretta');
             setPassword('');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -52,8 +62,8 @@ function AdminLogin({ onLogin }: AdminLoginProps) {
 
                     {error && <div className="error-message">{error}</div>}
 
-                    <button type="submit" className="btn-login">
-                        Accedi
+                    <button type="submit" className="btn-login" disabled={loading}>
+                        {loading ? 'Verifica...' : 'Accedi'}
                     </button>
                 </form>
 
